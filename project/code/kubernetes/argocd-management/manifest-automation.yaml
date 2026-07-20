@@ -9,7 +9,14 @@ spec:
         repoURL: 'git@github.com:MerrickJC/MerrickCampbell_MinorThesis_ROSDatabase.git'
         revision: main
         directories:
-          - path: project/code/kubernetes/manifests/*  # Finds 'project/code/kubernetes/manifests/frontend', etc.
+          - path: project/code/kubernetes/manifests/*
+
+          ###########################################################################
+          ## BELOW IS A LIST OF DIRECTORIES BEING EXCLUDED FROM CREATION BY ARGOCD ##
+          ###########################################################################
+          - path: project/code/kubernetes/manifests/cloudflare
+            exclude: true
+
   template:
     metadata:
       name: '{{path.basename}}' # Sets app name to the folder name
