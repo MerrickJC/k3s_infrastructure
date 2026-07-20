@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: dynamic-public-helm
+  namespace: argocd
+spec:
+  generators:
+    - git:
+        repoURL: 'git@github.com:MerrickJC/MerrickCampbell_MinorThesis_ROSDatabase.git'
+        revision: main
+        files:
+          - path: "project/code/kubernetes/helm-charts/*/config.yaml" # Argo CD reads every config.yaml it finds here
+  template:
+    metadata:
+      name: '{{path.basename}}'
+    spec:
+      project: default
+      sources:
+        - repoURL: '{{repoURL}}'
+          chart: '{{chart}}'
+          targetRevision: '{{version}}'
+          helm:
+            valueFiles:
+              - '$values-repo/{{path.path}}/values.yaml'
+            ignoreMissingValueFiles: true
+        - repoURL: 'git@github.com:MerrickJC/MerrickCampbell_MinorThesis_ROSDatabase.git'
+          targetRevision: main
+          ref: values-repo
+      destination:
+        server: 'https://kubernetes.default.svc'
+        namespace: '{{path.basename}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
