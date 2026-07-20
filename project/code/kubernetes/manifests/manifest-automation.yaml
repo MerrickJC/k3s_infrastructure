@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: cluster-apps
+  namespace: argocd
+spec:
+  generators:
+    - git:
+        repoURL: 'git@github.com:MerrickJC/MerrickCampbell_MinorThesis_ROSDatabase.git'
+        revision: main
+        directories:
+          - path: project/code/kubernetes/manifests/*  # Finds 'project/code/kubernetes/manifests/frontend', etc.
+  template:
+    metadata:
+      name: '{{path.basename}}' # Sets app name to the folder name
+    spec:
+      project: default
+      source:
+        repoURL: 'git@github.com:MerrickJC/MerrickCampbell_MinorThesis_ROSDatabase.git'
+        targetRevision: main
+        path: '{{path}}'    # Evaluates to 'apps/frontend'
+      destination:
+        server: 'https://kubernetes.default.svc'
+        namespace: '{{path.basename}}' # Dynamically deploys to a namespace matching the folder name
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true

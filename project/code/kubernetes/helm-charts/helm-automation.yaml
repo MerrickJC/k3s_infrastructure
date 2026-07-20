@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: microservices
+  namespace: argocd
+spec:
+  generators:
+    - git:
+        repoURL: 'git@github.com:MerrickJC/MerrickCampbell_MinorThesis_ROSDatabase.git'
+        revision: main
+        directories:
+          - path: project/code/kubernetes/helm-charts/*  # Finds 'project/code/kubernetes/manifests/frontend', etc.
+  template:
+    metadata:
+      name: '{{path.basename}}'
+    spec:
+      project: default
+      source:
+        repoURL: 'git@github.com:MerrickJC/MerrickCampbell_MinorThesis_ROSDatabase.git'
+        targetRevision: main
+        path: '{{path}}'    # Evaluates to 'apps/frontend'
+        helm:
+          # Automatically uses a values file that matches the folder structure
+          valueFiles:
+            - 'values-dev.yaml' 
+      destination:
+        server: 'https://kubernetes.default.svc'
+        namespace: '{{path.basename}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
