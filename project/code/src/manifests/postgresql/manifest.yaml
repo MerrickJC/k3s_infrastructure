@@ -8,7 +8,6 @@ spec:
   resources:
     requests:
       storage: 10Gi
-  storageClassName: storage-class-name
   volumeMode: Filesystem
 ---
 apiVersion: apps/v1
