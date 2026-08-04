@@ -1,0 +1,30 @@
+Table TESTING_SESSION [headercolor: #175e7a] {
+	TS_NUMBER integer [ pk, increment, not null ]
+	TS_DATE date [ not null ]
+	TS_PERSONNEL text
+	TS_NOTES text
+}
+
+Table STINT [headercolor: #175e7a] {
+	STINT_NUMBER integer [ pk, increment, not null ]
+	TS_NUMBER integer [ pk, not null ]
+	STINT_GIT_COMMIT text [ not null ]
+}
+
+Table FILE [headercolor: #175e7a] {
+	FILE_ID integer [ pk, increment, not null ]
+	FILE_NAME text [ not null ]
+	FILE_SIZE_KB integer [ not null, note: 'Should round up' ]
+}
+
+Table ROSBAG [headercolor: #175e7a] {
+	id integer [ pk, increment, not null ]
+}
+
+Table MOTEC_LOG [headercolor: #175e7a] {
+	id integer [ increment, not null ]
+}
+
+Ref fk_STINT_TS_NUMBER_TESTING_SESSION {
+	STINT.TS_NUMBER > TESTING_SESSION.TS_NUMBER [ delete: no action, update: no action ]
+}
