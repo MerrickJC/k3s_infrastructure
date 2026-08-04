@@ -1,0 +1,11 @@
+# Discussion Of Competitors
+
+## Kleinkram
+The major competitor that I am trying to beat is Kleinkram. Kleinkram can automate re-simulation using a concept they refer to as "Actions", but it doesn't efficiently download data. It has a central S3-like object storage and each Action is responsible for copying the data it requires from the object storage. If 10 actions in a row utilise the same data, then all 10 actions will re-download that data. This presents a few limitations.
+
+Although Kleinkram can support connecting any devices, including GPU-enable devices as queue consumers (workers) for the "Actions", it does not support complicated scheduling requirements. It considers requests for minimum cpu cores, cpu memory, and gpu memory but cannot schedule based on other rules. This limits its use in a hybrid-cloud setup, since it cannot preference towards some nodes over others. For example, consider a robotics company that wants to setup a cloud environment which stores data and can perform data analysis but wants to perform Hardware-In-The-Loop (HIL) testing to ensure that algorithms work on the hardware that they will be deployed on. Kleinkram does not offer a way for the company to utilise the cloud for everything except for HIL testing. Additionally, copying data from the cloud to on-premise hardware typically results in data egress charges from the cloud provider for all data that goes via the internet. Kleinkram does not provide a way to reduce these costs. If 10 action executions are added to the queue at the same time that all depend on the same data stored in Kleinkram, this data will be downloaded via the internet 10 times. This can easily balloon cloud data egress costs unnecessarily.
+
+
+
+## Self-Hosting
+If you assume that the entire Kleinkram software stack is running in a self-hosted cluster, then it is likely inefficient to be re-downloading the data from S3 to your devices. Depending on the storage network structure of your datacentre, it is entirely possible that the physical storage medium underpinning both your S3-like storage and your hosts are the same. This means you are copying a file from one location on a storage drive to another location on the same drive for as many times as there are jobs needing to be run for that data.
