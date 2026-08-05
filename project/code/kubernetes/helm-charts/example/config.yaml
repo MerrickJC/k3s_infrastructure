@@ -1,3 +1,9 @@
+# fill in the details as required
+# if you see commands of the form:
+#   helm repo add juicefs https://juicedata.github.io/charts/
+#                   ^                     ^
+#                 chart                 repoUrl
+
 repoURL: https://<url-of-a-helm-repository>
 chart: <helm-chart-name>
 version: <helm-chart-version>
