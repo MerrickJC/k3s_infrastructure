@@ -1,0 +1,3 @@
+repoURL: https://<url-of-a-helm-repository>
+chart: <helm-chart-name>
+version: <helm-chart-version>
