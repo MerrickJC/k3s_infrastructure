@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: garage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: garage
+  template:
+    metadata:
+      labels:
+        app: garage
+    spec:
+      containers:
+      - name: garage
+        image: dxflrs/garage:v2.3.0
+        args:
+        - /garage
+        - server
+        - --single-node
+        - --default-bucket
+        env:
+        - name: GARAGE_DEFAULT_BUCKET
+          value: "dev-bucket"
+        - name: GARAGE_DEFAULT_ACCESS_KEY
+          value: "GK1234567890abcdef12345678"
+        - name: GARAGE_DEFAULT_SECRET_KEY
+          value: "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+        ports:
+        - containerPort: 3900
+          name: s3
+        - containerPort: 3903
+          name: admin
+        volumeMounts:
+        - name: config
+          mountPath: /etc/garage.toml
+          subPath: garage.toml
+        - name: storage
+          mountPath: /var/lib/garage
+      volumes:
+      - name: config
+        configMap:
+          name: garage-config
+      - name: storage
+        persistentVolumeClaim:
+          claimName: garage-pvc
