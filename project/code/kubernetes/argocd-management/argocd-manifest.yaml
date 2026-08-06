@@ -28,3 +28,22 @@ spec:
       - CreateNamespace=true
       # REQUIRED: Server-Side Apply is mandatory for Argo CD manifests
       - ServerSideApply=true
+---
+# Explicitly declare the default AppProject (ArgoCD creates it at runtime,
+# so it must be listed here for kustomize to manage it)
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: default
+  namespace: argocd
+spec:
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  destinations:
+    - namespace: '*'
+      server: '*'
+  sourceRepos:
+    - '*'
+  orphanedResources:
+    warn: false

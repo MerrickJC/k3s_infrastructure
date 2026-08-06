@@ -9,7 +9,3 @@ resources:
   - ./argocd-manifest.yaml
   - ./helm-automation.yaml
   - ./manifest-automation.yaml
-
-patches:
-  # Patch the default AppProject to suppress orphaned resource warnings
-  - path: patch-default-appproject.yaml
