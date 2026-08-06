@@ -21,7 +21,7 @@ spec:
           targetRevision: '{{version}}'
           helm:
             valueFiles:
-              - '$values-repo/{{path.path}}/values.yaml'
+              - '$values-repo/{{path}}/values.yaml'
             ignoreMissingValueFiles: true
         - repoURL: 'git@github.com:MerrickJC/MerrickCampbell_MinorThesis_ROSDatabase.git'
           targetRevision: main
