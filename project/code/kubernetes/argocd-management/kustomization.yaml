@@ -10,5 +10,6 @@ resources:
   - ./helm-automation.yaml
   - ./manifest-automation.yaml
 
-# (Optional) You can add patches here later to configure Argo CD 
-# e.g., ingress, custom argocd-cm settings, resource limits, etc.
+patches:
+  # Patch the default AppProject to suppress orphaned resource warnings
+  - path: patch-default-appproject.yaml
