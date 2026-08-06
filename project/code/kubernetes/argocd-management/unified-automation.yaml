@@ -17,6 +17,8 @@ spec:
           ###########################################################################
           - path: "project/code/kubernetes/apps/example/config.yaml"
             exclude: true
+  # Base template — must be valid YAML (no Go conditionals here).
+  # templatePatch below handles conditional source assembly.
   template:
     metadata:
       name: '{{ .appName }}'
@@ -31,6 +33,13 @@ spec:
           selfHeal: true
         syncOptions:
           - CreateNamespace=true
+      sources: []
+  # templatePatch is rendered as a Go template by ArgoCD and merged as a
+  # strategic merge patch on top of the base template above.
+  # This is the correct way to conditionally include sources without
+  # producing invalid YAML that breaks Kustomize parsing.
+  templatePatch: |
+    spec:
       sources:
         {{- if (default false .hasHelm) }}
         - repoURL: '{{ .helm.repoURL }}'
