@@ -46,4 +46,4 @@ spec:
   sourceRepos:
     - '*'
   orphanedResources:
-    warn: true
+    warn: false
