@@ -1,8 +1,0 @@
-# Dex App Configuration
-config:
-  issuer: https://dex.merrickcampbell.au
-  storage:
-    type: memory # or 'kubernetes'
-  web:
-    http: 0.0.0.0:5556
-  connectors: []
