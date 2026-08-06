@@ -7,5 +7,4 @@ resources:
   # Declaratively reference the remote raw manifest URL
   - https://raw.githubusercontent.com/argoproj/argo-cd/v3.5.0/manifests/install.yaml
   - ./argocd-manifest.yaml
-  - ./helm-automation.yaml
-  - ./manifest-automation.yaml
+  - ./unified-automation.yaml
