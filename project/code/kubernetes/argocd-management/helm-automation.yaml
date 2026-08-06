@@ -10,7 +10,6 @@ spec:
         revision: main
         files:
           - path: "project/code/kubernetes/helm-charts/*/config.yaml" # Argo CD reads every config.yaml it finds here
-          - path: "project/code/kubernetes/helm-charts/example/*"
   template:
     metadata:
       name: '{{path.basename}}'
