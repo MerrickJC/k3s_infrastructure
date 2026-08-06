@@ -1,4 +1,7 @@
+# THIS FILE SHOULD BE NAMED 'values.yaml'
+#
 # helm charts support overrides. Read through the documentation for
 # the helm chart you are using and add any necessary overrides into this file
+
 myCustomOverride: "value of the override"
 aVariable: true

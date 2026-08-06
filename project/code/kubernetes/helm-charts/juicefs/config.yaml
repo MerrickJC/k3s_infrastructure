@@ -1,3 +1,3 @@
 repoURL: https://juicedata.github.io/charts/
 chart: juicefs-csi-driver
-version: HEAD
+version: 0.32.1

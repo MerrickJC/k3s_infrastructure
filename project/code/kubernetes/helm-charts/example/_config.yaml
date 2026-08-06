@@ -1,0 +1,20 @@
+# THIS FILE SHOULD BE NAMED 'config.yaml'
+#
+# Fill in the details as required
+# If you see a command similar to:
+#   helm repo add juicefs https://juicedata.github.io/charts/
+#                                         ^
+#                                       repoUrl
+#
+# If you see a command similar to:
+#   helm upgrade --install juicefs-csi-driver juicefs/juicefs-csi-driver -n kube-system -f ./values-mycluster.yaml
+#                                                    |        ^         |
+#                                                           chart
+#
+# Easiest way to find the version is to install the helm cli locally, add the repo, then run:
+#   helm search repo <repo>/<chart>
+# Which will return the current chart version
+
+repoURL: https://<url-of-a-helm-repository>
+chart: <helm-chart-name>
+version: <helm-chart-version>
