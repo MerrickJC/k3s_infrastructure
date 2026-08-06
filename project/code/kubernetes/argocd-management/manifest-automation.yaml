@@ -14,7 +14,7 @@ spec:
           ###########################################################################
           ## BELOW IS A LIST OF DIRECTORIES BEING EXCLUDED FROM CREATION BY ARGOCD ##
           ###########################################################################
-          - path: project/code/kubernetes/manifests/cloudflare
+          - path: project/code/kubernetes/manifests/example
             exclude: true
 
   template:

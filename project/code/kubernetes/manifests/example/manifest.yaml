@@ -1,0 +1,4 @@
+# Create a standard kubernetes manifest which can be applied to the cluster
+# You will often see commands like 'kubectl apply -f <file>.yaml'. Copy the .yaml file
+# into a new project folder and it will be automatically applied by ArgoCD for you
+
