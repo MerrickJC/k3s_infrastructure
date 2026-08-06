@@ -1,3 +1,10 @@
-repoURL: https://charts.dexidp.io
-chart: dex
-version: 0.24.1
+appName: cert-manager
+namespace: cert-manager
+
+hasHelm: true
+hasManifests: true
+
+helm:
+  repoURL: https://charts.dexidp.io
+  chart: dex
+  version: 0.24.1

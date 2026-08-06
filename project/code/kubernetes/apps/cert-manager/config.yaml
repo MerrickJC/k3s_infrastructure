@@ -1,3 +1,10 @@
-repoURL: https://charts.jetstack.io
-chart: cert-manager
-version: v1.21.1
+appName: cert-manager
+namespace: cert-manager
+
+hasHelm: true
+hasManifests: true
+
+helm:
+  repoURL: https://charts.jetstack.io
+  chart: cert-manager
+  version: v1.21.1

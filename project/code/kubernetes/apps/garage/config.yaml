@@ -1,0 +1,5 @@
+appName: garage
+namespace: garage
+
+hasHelm: false
+hasManifests: true

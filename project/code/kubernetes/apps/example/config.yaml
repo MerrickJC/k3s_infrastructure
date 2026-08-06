@@ -15,6 +15,13 @@
 #   helm search repo <repo>/<chart>
 # Which will return the current chart version
 
-repoURL: https://<url-of-a-helm-repository>
-chart: <helm-chart-name>
-version: <helm-chart-version>
+appName: <name>
+namespace: <namespace-name>
+
+hasHelm: true
+hasManifests: true
+
+helm:
+  repoURL: https://<url>
+  chart: <chart-name>
+  version: <version-number>

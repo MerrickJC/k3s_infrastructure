@@ -1,0 +1,5 @@
+appName: postgresql
+namespace: postgresql
+
+hasHelm: false
+hasManifests: true

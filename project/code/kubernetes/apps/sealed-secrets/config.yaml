@@ -1,0 +1,5 @@
+appName: sealed-secrets
+namespace: sealed-secrets
+
+hasHelm: false
+hasManifests: true

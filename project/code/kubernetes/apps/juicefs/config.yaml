@@ -1,3 +1,10 @@
-repoURL: https://juicedata.github.io/charts/
-chart: juicefs-csi-driver
-version: 0.32.1
+appName: juicefs
+namespace: juicefs
+
+hasHelm: true
+hasManifests: false
+
+helm:
+  repoURL: https://juicedata.github.io/charts/
+  chart: juicefs-csi-driver
+  version: 0.32.1
