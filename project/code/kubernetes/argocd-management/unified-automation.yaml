@@ -1,0 +1,51 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: unified-automation
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        repoURL: 'git@github.com:MerrickJC/MerrickCampbell_MinorThesis_ROSDatabase.git'
+        revision: main
+        files:
+          - path: "project/code/kubernetes/apps/*/config.yaml"
+          ###########################################################################
+          ## BELOW IS A LIST OF DIRECTORIES BEING EXCLUDED FROM CREATION BY ARGOCD ##
+          ###########################################################################
+          - path: "project/code/kubernetes/apps/example/config.yaml"
+            exclude: true
+  template:
+    metadata:
+      name: '{{ .appName }}'
+    spec:
+      project: default
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{ .namespace }}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+      sources:
+        {{- if (default false .hasHelm) }}
+        - repoURL: '{{ .helm.repoURL }}'
+          chart: '{{ .helm.chart }}'
+          targetRevision: '{{ .helm.version }}'
+          helm:
+            valueFiles:
+              - '$values/project/code/kubernetes/apps/{{ .appName }}/values.yaml'
+            ignoreMissingValueFiles: true
+        - repoURL: 'git@github.com:MerrickJC/MerrickCampbell_MinorThesis_ROSDatabase.git'
+          targetRevision: main
+          ref: values
+        {{- end }}
+        {{- if (default false .hasManifests) }}
+        - repoURL: 'git@github.com:MerrickJC/MerrickCampbell_MinorThesis_ROSDatabase.git'
+          targetRevision: main
+          path: 'project/code/kubernetes/apps/{{ .appName }}'
+        {{- end }}
