@@ -2,4 +2,4 @@ appName: baganto
 namespace: baganto
 
 hasHelm: false
-hasManifests: false
+hasManifests: true
