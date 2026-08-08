@@ -1,0 +1,5 @@
+appName: traefik
+namespace: kube-system
+
+hasHelm: false
+hasManifests: true
