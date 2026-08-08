@@ -5,12 +5,14 @@ metadata:
   namespace: dex
 spec:
   entryPoints:
-    - websecure
+    - web         # TODO: change to websecure when you need TLS encryption
   routes:
     - match: Host(`dex.merrickcampbell.au`)
       kind: Rule
       services:
         - name: dex
           port: 5556
-  tls:
-    secretName: dex-tls
+
+  ## TODO: Uncomment when you need TLS encryption (e.g. when access directly and not through cloudflare tunnel)
+  # tls:
+  #   secretName: dex-tls
