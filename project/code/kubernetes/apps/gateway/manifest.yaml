@@ -1,18 +1,22 @@
-apiVersion: gateway.networking.k8s.io/v1
-kind: Gateway
+# Wildcard TLS certificate for *.merrickcampbell.au
+# cert-manager will provision and renew this via the HTTP-01 challenge using
+# a temporary Ingress that Traefik serves.
+#
+# NOTE: The secret is created in the same namespace as each IngressRoute that
+# references it. Add a Certificate resource per-namespace, or use a secret
+# mirroring tool (e.g. reflector) to share a single secret cluster-wide.
+#
+# This Certificate covers the dex namespace. Add similar Certificate resources
+# to other namespaces as new IngressRoutes are created.
+apiVersion: cert-manager.io/v1
+kind: Certificate
 metadata:
-  name: main-gateway
-  namespace: gateway
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
+  name: dex-tls
+  namespace: dex
 spec:
-  gatewayClassName: traefik
-  listeners:
-  - name: https-gateway
-    protocol: HTTPS
-    port: 443
-    hostname: "*.merrickcampbell.au"
-    tls:
-      mode: Terminate
-      certificateRefs:
-      - name: https-tls # cert-manager auto-creates and manages this Secret
+  secretName: dex-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - "dex.merrickcampbell.au"
