@@ -1,12 +1,12 @@
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: httpbin-tls
-  namespace: httpbin
-spec:
-  secretName: httpbin-tls
-  issuerRef:
-    name: letsencrypt-prod
-    kind: ClusterIssuer
-  dnsNames:
-    - httpbin.merrickcampbell.au
+# apiVersion: cert-manager.io/v1
+# kind: Certificate
+# metadata:
+#   name: httpbin-tls
+#   namespace: httpbin
+# spec:
+#   secretName: httpbin-tls
+#   issuerRef:
+#     name: letsencrypt-prod
+#     kind: ClusterIssuer
+#   dnsNames:
+#     - httpbin.merrickcampbell.au
