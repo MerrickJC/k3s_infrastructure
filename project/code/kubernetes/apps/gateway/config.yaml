@@ -1,5 +1,0 @@
-appName: gateway
-namespace: gateway
-
-hasHelm: false
-hasManifests: true

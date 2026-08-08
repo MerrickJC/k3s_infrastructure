@@ -1,0 +1,5 @@
+appName: ingress
+namespace: ingress
+
+hasHelm: false
+hasManifests: true
