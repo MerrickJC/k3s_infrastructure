@@ -1,0 +1,18 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: headlamp-route
+  namespace: headlamp
+spec:
+  entryPoints:
+    - web         # TODO: change to websecure when you need TLS encryption
+  routes:
+    - match: Host(`headlamp.merrickcampbell.au`)
+      kind: Rule
+      services:
+        - name: headlamp
+          port: 80
+
+  ## TODO: Uncomment when you need TLS encryption (e.g. when access directly and not through cloudflare tunnel)
+  # tls:
+  #   secretName: headlamp-tls
