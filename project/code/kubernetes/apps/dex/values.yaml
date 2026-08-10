@@ -15,7 +15,7 @@ config:
   staticClients:
     - id: headlamp
       redirectURIs:
-        - 'https://headlamp.merrickcampbell.au/oidc-callback'
+        - 'http://headlamp.merrickcampbell.au/oidc-callback'
       name: 'Headlamp Web'
       secretEnv: $HEADLAMP_DEX_CLIENT_SECRET  # References an environment variable
 
