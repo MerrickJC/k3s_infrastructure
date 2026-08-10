@@ -1,0 +1,10 @@
+envFrom:
+  - secretRef:
+      name: headlamp-dex-client-secret
+
+config:
+  oidc:
+    clientID: headlamp
+    clientSecret: $HEADLAMP_DEX_CLIENT_SECRET
+    issuerURL: https://dex.merrickcampbell.au
+    scopes: "email"
