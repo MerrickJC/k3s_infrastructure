@@ -1,5 +1,0 @@
-appName: httpbin
-namespace: httpbin
-
-hasHelm: false
-hasManifests: true
