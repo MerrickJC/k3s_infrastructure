@@ -2,6 +2,8 @@
 envFrom:
   - secretRef:
       name: dex-github-oauth
+  - secretRef:
+      name: headlamp-dex-client-secret
 
 config:
   issuer: https://dex.merrickcampbell.au
@@ -9,6 +11,14 @@ config:
     type: memory
   web:
     http: 0.0.0.0:5556
+
+  staticClients:
+    - id: headlamp
+      redirectURIs:
+        - 'https://headlamp.merrickcampbell.au/oidc-callback'
+      name: 'Headlamp Web'
+      secretEnv: $HEADLAMP_DEX_CLIENT_SECRET  # References an environment variable
+
   connectors:
   - type: github
     id: github

@@ -6,9 +6,9 @@ We want as much of the cloud configuration as possible to be defined using Infra
 Sealed secrets are not permanently secret! They are decrypted and stored within the cluster in a way that is retrievable by anyone with access to the cluster via the kubectl commandline. This means you shouldn't put anything in there that you genuinely do not want found out. Do not put your own personal passwords in there and expect them to be safe!
 
 ## How To Create One?
-Assume that you have some value that you are trying to store in a secret in Kubernetes. 
+Assume that you have some value that you are trying to store in a secret in Kubernetes. Please note that a sealed secret can only be used in the namespace it was created. Attempting to use the sealed secret in a different namespace will not be permitted unless an appropriate ServiceAccount, Role, and RoleBinding exists (this should be avoided). 
 ```
-kubectl create secret generic my-secret --from-literal=username=admin --dry-run=client -o yaml | kubeseal --format yaml > sealed-secret.yaml
+kubectl create secret generic <secret-name> --from-literal=<secret-key>=<secret-value> -n <namespace> --dry-run=client -o yaml | kubeseal --format yaml > sealed-secret.yaml
 ```
 
 ## How To Migrate The Sealed Secret Tool?
