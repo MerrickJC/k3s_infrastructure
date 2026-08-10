@@ -4,7 +4,7 @@
 - [ ] Find a web-based PostgreSQL database modeller and deploy it in my cluster so that I (and people in the future) can modify the database schema
 - [ ] Create preliminary Postgres schema
 - [ ] Deploy the Postgres schema using a git-based migration tool
-- [ ] Setup a random S3-like storage in the most basic way so that it just works
+- [X] Setup a random S3-like storage in the most basic way so that it just works
 - [ ] Setup JuiceFS on top of the S3-like storage
 - [ ] Setup an API framework which works locally and can accept a ROS bag as input and store it locally (work on storing to S3 later)
 - [ ] Create a really basic file upload UI which routes to the API framework. Make it a static frontend so that I can later use Swift (S3-like) static site instead of needing a server
@@ -41,12 +41,12 @@
     - [ ] Setup Ubuntu on the edge node
     - [ ] Setup K3s on the edge node
     - [ ] Configure a VPN or tunnel or similar for the edge node to connect to the cluster
-    - [ ] Identify the edge node as an edge node
+    - [ ] Identify the edge node as an edge node (using tags or similar so that it can be selected)
 - [ ] Setup Fluid on the edge node
     - [ ] Deploy Fluid in Kubernetes
     - [ ] Setup so that new edge nodes automatically utilise Fluid
 
-## Data Analysis
+## Data Analysis Frontend
 - [ ] Update the frontend to include information:
     - [ ] Summary information about ROS bags
 - [ ] Update the frontend to include a way to:
@@ -72,6 +72,14 @@
     - [ ] Produces a git patch file for each launch (also save the commit it branches off)
     - [ ] Scrape all parameters for each launch
 
+## Final Paper Validation
+- [ ] Setup Kleinkram
+- [ ] Add bags to Kleinkram
+- [ ] Add more tests to comparison to Kleinkram test plan
+- [ ] Execute comparison to Kleinkram test plan
+    - [ ] Test 1
+    - [ ] Test 2
+    - [ ] Test 3
+
 
 # Consider Doing In The Future
-- [ ] 
