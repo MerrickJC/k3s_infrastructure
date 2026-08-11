@@ -3,6 +3,8 @@ envFrom:
       name: dex-github-oauth
   - secretRef:
       name: headlamp-dex-client-secret
+  - secretRef:
+      name: argocd-dex-client-secret
 
 config:
   issuer: https://dex.merrickcampbell.au
@@ -24,6 +26,11 @@ config:
       redirectURIs:
         - 'http://localhost:8000'
         - 'urn:ietf:wg:oauth:2.0:oob'
+    - id: argocd
+      redirectURIs:
+        - 'https://argocd.merrickcampbell.au/auth/callback'
+      name: 'ArgoCD'
+      secretEnv: ARGOCD_DEX_CLIENT_SECRET
 
 
   connectors:

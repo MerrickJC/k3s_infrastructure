@@ -8,3 +8,7 @@ resources:
   - https://raw.githubusercontent.com/argoproj/argo-cd/v3.5.0/manifests/install.yaml
   - ./argocd-manifest.yaml
   - ./unified-automation.yaml
+
+patches:
+  - path: ./argocd-cm-patch.yaml
+  - path: ./argocd-rbac-cm-patch.yaml
