@@ -21,8 +21,9 @@ config:
     - id: kubernetes
       name: 'Kubernetes CLI'
       public: true
-      redirectURIs:
-        - http://localhost
+      ## when not included, the redirectURIs, defaults to http://localhost on any port
+      # redirectURIs:
+      #   - http://localhost:8000
 
   connectors:
   - type: github
