@@ -17,7 +17,7 @@ spec:
           ###########################################################################
           - path: "project/code/kubernetes/apps/example/config.yaml"
             exclude: true
-  # Base template — must be valid YAML (no Go conditionals here).
+  # Base template must have valid YAML (no Go conditionals here).
   # templatePatch below handles conditional source assembly.
   template:
     metadata:
