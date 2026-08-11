@@ -15,3 +15,6 @@ kubectl apply -k ./project/code/kubernetes/argocd-management
 In order to re-use the sealed secrets that were created for the previous cluster, you need to extract the encryption key that it uses and add this into the new cluster. You can find the steps for this [here](/docs/kubernetes/sealed-secrets.md#how-to-migrate-the-sealed-secret-tool).
 
 If you cannot get the old encryption key, you will have to recreate all of the sealed secrets. You will have to find all the original values that were encrypted and [create new sealed secrets](/docs/kubernetes/sealed-secrets.md#how-to-create-one)
+
+## OIDC Authentication For kubectl
+The K3s API server's OIDC flags (which make it require a Dex login for `kubectl` access) are set on each server node's `/etc/rancher/k3s/config.yaml` and are not stored in Git for the same reason as the rest of the initial cluster setup. You will need to reapply them on the new cluster. See [here](/docs/kubernetes/oidc-cluster-authentication.md#1-manual-step-k3s-api-server-flags-not-stored-in-git) for the exact flags.

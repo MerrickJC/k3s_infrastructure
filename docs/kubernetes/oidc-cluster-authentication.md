@@ -51,22 +51,14 @@ kubectl oidc-login setup \
   --oidc-client-id=kubernetes \
   --oidc-extra-scope=groups,email,offline_access
 ```
+> **If you do not have access to a web browser** on the device you are trying to log in on, you will need to also use the flags `--grant-type=authcode-keyboard --oidc-redirect-url=urn:ietf:wg:oauth:2.0:oob`. It will give you a URL to copy and paste into a browser, this will then give you a code that you can type to confirm the login.
 
-This walks through a real login in your browser (GitHub → Dex → back to `kubectl`) and prints the exact `user:` block to paste into your `~/.kube/config`, e.g.:
+This walks through a real login in your browser (GitHub → Dex → back to `kubectl`) and prints the exact commands you need to run to setup the user in your kubectl config file.
 
-```yaml
-users:
-  - name: oidc
-    user:
-      exec:
-        apiVersion: client.authentication.k8s.io/v1beta1
-        command: kubectl
-        args:
-          - oidc-login
-          - get-token
-          - --oidc-issuer-url=https://dex.merrickcampbell.au
-          - --oidc-client-id=kubernetes
-          - --oidc-extra-scope=groups,email,offline_access
+After creating the user, you also need to configure the cluster and create a context which links the cluster to the user:
 ```
-
-Point a context's `user:` at this entry (alongside the cluster's API server address) and `kubectl` will open a browser login on first use, then cache/refresh the token.
+kubectl config set-cluster mms-cluster --server=<server-name-or-ip-and-port>
+kubectl config set-context mms-cluster-context --cluster=mms-cluster --user=oidc
+kubectl config use-context mms-cluster-context
+```
+where the `server-name-or-ip-and-port` is the server's domain name or the ip address and port to connect to the server. You can optionally choose to rename "mms-cluster" and "mms-cluster-context" to something else, but it must be unique for the kubectl config file (see current configs by running `kubectl config view`). This must be unique, so if the team has multiple clusters then ensure to keep these clusters and contexts unique in your kubectl config.
