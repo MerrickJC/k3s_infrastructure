@@ -11,6 +11,8 @@ kubectl create secret generic headlamp-dex-client-secret --from-literal=HEADLAMP
 kubectl create secret generic headlamp-dex-client-secret --from-literal=HEADLAMP_DEX_CLIENT_SECRET="ABCD" -n dex --dry-run=client -o yaml | kubeseal --format yaml > headlamp-dex-client-secret.yaml
 ```
 
+I would recommend replacing "ABCD" with the output of `openssl rand -base64 32`. **REMEMBER both secrets must have the same value**, you are only generating the sealed secret twice to handle the two different namespaces.
+
 More information about sealed secrets can be [found here](../../../../../../docs/kubernetes/sealed-secrets.md).
 
 It is important that one of the secrets is created for the dex namespace and that the other is created for the client's namespace (whatever namespace an application trying to provide dex authentication is deployed in).
