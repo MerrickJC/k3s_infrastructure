@@ -1,0 +1,5 @@
+appName: rbac-oidc
+namespace: kube-system
+
+hasHelm: false
+hasManifests: true

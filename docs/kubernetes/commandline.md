@@ -14,7 +14,7 @@ To do this, you will need to have installed the following:
 - [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/)
 - [krew](https://krew.sigs.k8s.io/docs/user-guide/setup/install/)
 
-You can verify installation by ensuring that you can run ```kubectl krew --help``` and getting the manual
+You can verify installation by ensuring that you can run ```kubectl krew --help``` and having it return the manual's help page.
 
 ### Setup
 
@@ -22,4 +22,6 @@ After installing the above  you will need to run the following commands
 ```
 kubectl krew install oidc-login
 ```
+
+The cluster's API server is configured to require an OIDC login (through Dex) for `kubectl` access. See [oidc-cluster-authentication.md](./oidc-cluster-authentication.md) for how to log in and what access you'll get.
 

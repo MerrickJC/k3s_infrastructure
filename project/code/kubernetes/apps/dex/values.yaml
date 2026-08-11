@@ -18,6 +18,12 @@ config:
         - 'https://headlamp.merrickcampbell.au/oidc-callback'
       name: 'Headlamp Web'
       secretEnv: HEADLAMP_DEX_CLIENT_SECRET
+    - id: kubernetes
+      name: 'Kubernetes CLI'
+      public: true
+      redirectURIs:
+        - 'http://localhost:8000'
+        - 'http://localhost:18000'
 
   connectors:
   - type: github

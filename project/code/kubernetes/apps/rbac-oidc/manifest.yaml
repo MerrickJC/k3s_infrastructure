@@ -1,0 +1,27 @@
+# Authorization for people authenticating via Dex OIDC (see docs/kubernetes/oidc-cluster-authentication.md)
+# OIDC login only proves identity but these bindings are what actually grants permissions
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: oidc-authenticated-readonly
+subjects:
+  - kind: Group
+    name: system:authenticated
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: view
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: oidc-autonomous-systems-admin
+subjects:
+  - kind: Group
+    name: 'oidc:monashmotorsport:autonomous-systems'
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
