@@ -9,4 +9,4 @@ config:
   oidc:
     clientID: headlamp
     issuerURL: https://dex.merrickcampbell.au
-    scopes: "email"
+    scopes: "email,groups,audience:server:client_id:kubernetes"

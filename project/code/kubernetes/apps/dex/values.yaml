@@ -31,6 +31,8 @@ config:
       redirectURIs:
         - 'http://localhost:8000'
         - 'urn:ietf:wg:oauth:2.0:oob'
+      trustedPeers:
+        - headlamp
     - id: argocd
       redirectURIs:
         - 'https://argocd.merrickcampbell.au/auth/callback'
