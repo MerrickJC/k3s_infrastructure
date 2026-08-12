@@ -18,7 +18,7 @@ spec:
       - name: drawdb
         image: ghcr.io/drawdb-io/drawdb:latest
         ports:
-        - containerPort: 3000
+        - containerPort: 80
 ---
 apiVersion: v1
 kind: Service
@@ -30,4 +30,4 @@ spec:
     app: drawdb
   ports:
   - port: 80
-    targetPort: 3000
+    targetPort: 80
