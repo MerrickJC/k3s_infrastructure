@@ -9,7 +9,9 @@ envFrom:
 config:
   issuer: https://dex.merrickcampbell.au
   storage:
-    type: memory
+    type: kubernetes
+    config:
+      inCluster: true
   web:
     http: 0.0.0.0:5556
 
