@@ -45,6 +45,7 @@ No `oidc-ca-file` is required because Dex's issuer URL is served over public HTT
 
 Each person needs `kubectl`, `krew`, and the `oidc-login` plugin (see [commandline.md](./commandline.md) for installing those).
 
+### Login
 Then run:
 
 ```
@@ -57,6 +58,19 @@ kubectl oidc-login setup \
 
 This walks through a real login in your browser (GitHub → Dex → back to `kubectl`) and prints the exact commands you need to run to setup the user in your kubectl config file.
 
+#### Troubleshooting
+If you have issues like: 
+```
+E0812 00:39:33.761993  201838 memcache.go:265] "Unhandled Error" err="couldn't get current server API group list: the server has asked for the client to provide credentials"
+error: You must be logged in to the server (the server has asked for the client to provide credentials)
+```
+then you can try removing your token using:
+```
+kubectl oidc-login clean
+```
+You will be asked to login again when you run the next command
+
+### Configuration
 After creating the user, you also need to configure the cluster and create a context which links the cluster to the user. Part of the configuration for the cluster involves using the certificates for the cluster's certificate authority to ensure that the cluster is who it says it is. MMS should attempt to maintain up-to-date certificates in [k3s-ca.crt](./k3s-ca.crt) so that developers don't need to go out of their way to find the certificates. You can, however, find the certificates by logging into the node that hosts the K3s server and running the following command:
 ```
 sudo grep "certificate-authority-data" /etc/rancher/k3s/k3s.yaml | awk "{print \$2}" | base64 -d > k3s-ca.crt
