@@ -35,4 +35,4 @@ helm:
 
   repoURL: https://<url>
   chart: <chart-name>
-  targetRevision: <version-number>
+  targetRevision: <version-number>        # should be the chart version
