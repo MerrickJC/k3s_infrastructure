@@ -1,0 +1,2 @@
+# Atlas Operator
+Installs the [Atlas Kubernetes Operator](https://atlasgo.io/integrations/kubernetes/operator), which watches `AtlasSchema` custom resources cluster-wide and declaratively reconciles a Postgres database's schema to match what's committed in Git. The actual `AtlasSchema` resource for this project's database lives in [`apps/postgresql/atlas-schema.yaml`](../postgresql/atlas-schema.yaml), since it needs to sit in the `postgresql` namespace to read the CloudNativePG generated credentials Secret in that namespace.
