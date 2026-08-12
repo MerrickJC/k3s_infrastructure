@@ -12,6 +12,8 @@ By default, K3s only accepts client-certificate based auth for `kubectl`, which 
 
 The read-only tier is bound to Kubernetes' built-in `system:authenticated` group rather than a Dex org-membership group claim, since Dex is already configured to refuse to log anyone in who isn't a `monashmotorsport` org member (see `orgs:` in [dex/values.yaml](../../project/code/kubernetes/apps/dex/values.yaml)), so anyone who has logged in must be a member of monashmotorsport. The admin tier checks the group claim from Dex to see if the user is in autonomous-systems. 
 
+**Dex uses `kubernetes`-backed storage** (`config.storage.type: kubernetes` in [dex/values.yaml](../../project/code/kubernetes/apps/dex/values.yaml)), not the default in-memory storage. This matters: Dex's signing key lives in that storage. With in-memory storage, every Dex pod restart (redeploy, crash, node drain, anything) silently regenerates the signing key and invalidates every outstanding token cluster-wide, breaking `kubectl`/Headlamp/ArgoCD logins all at once with a confusing `oidc: verify token: failed to verify signature` error on the API server side and no obvious cause. Kubernetes-backed storage persists the signing key as a CRD in etcd, so it survives pod restarts. The Dex Helm chart creates the RBAC this needs by default (`rbac.create` / `rbac.createClusterScoped`, both `true` unless overridden), including permission for Dex to self-create its own CRDs on first start — no extra manifests needed.
+
 ## 1. Manual step: K3s API server flags (not stored in Git)
 K3s server bootstrap lives outside this repository (see [migration-guide.md](../migration-guide.md)), so this step has to be applied by hand on every K3s **server** node (not agents).
 
@@ -55,9 +57,14 @@ kubectl oidc-login setup \
 
 This walks through a real login in your browser (GitHub → Dex → back to `kubectl`) and prints the exact commands you need to run to setup the user in your kubectl config file.
 
-After creating the user, you also need to configure the cluster and create a context which links the cluster to the user:
+After creating the user, you also need to configure the cluster and create a context which links the cluster to the user. Part of the configuration for the cluster involves using the certificates for the cluster's certificate authority to ensure that the cluster is who it says it is. MMS should attempt to maintain up-to-date certificates in [k3s-ca.crt](./k3s-ca.crt) so that developers don't need to go out of their way to find the certificates. You can, however, find the certificates by logging into the node that hosts the K3s server and running the following command:
 ```
-kubectl config set-cluster mms-cluster --server=<server-name-or-ip-and-port>
+sudo grep "certificate-authority-data" /etc/rancher/k3s/k3s.yaml | awk "{print \$2}" | base64 -d > k3s-ca.crt
+```
+
+Copy the `k3s-ca.crt` file onto your local machine (or use the [one provided](./k3s-ca.crt) if it is up-to-date) and run the following commands:
+```
+kubectl config set-cluster mms-cluster --server=<server-name-or-ip-and-port> --certificate-authority=k3s-ca.crt --embed-certs=true
 kubectl config set-context mms-cluster-context --cluster=mms-cluster --user=oidc
 kubectl config use-context mms-cluster-context
 ```
