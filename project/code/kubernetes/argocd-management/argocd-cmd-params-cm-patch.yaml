@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cmd-params-cm
+data:
+  # TLS is terminated upstream (either Cloudflare Tunnel or IngressRoute), and traffic reaches the
+  # argocd-server pod as plain HTTP via the Traefik IngressRoute (web entrypoint,
+  # port 80). Without this, argocd-server serves TLS-only on its single port and
+  # redirects HTTP -> HTTPS, which loops forever since the request never actually
+  # arrives over TLS. See apps/ingress/routes/argocd.yaml.
+  server.insecure: "true"
