@@ -14,9 +14,9 @@
 - [ ] Setup GitHub CI/CD (or alternative) to build the frontend and backend docker containers
 - [ ] Run the backend as a service in Kubernetes
 - [ ] Run the frontend as a service in Kubernetes (or else figure out how to use my S3-like storage to host it)
-- [ ] Configure services to be accessible outside the cluster (configure ingress into the cluster)
+- [X] Configure services to be accessible outside the cluster (configure ingress into the cluster)
     - [ ] Frontend
-    - [ ] ArgoCD web UI
+    - [X] ArgoCD web UI
     - [ ] Postgres modeller
 
 ## Job Setup And Testing
