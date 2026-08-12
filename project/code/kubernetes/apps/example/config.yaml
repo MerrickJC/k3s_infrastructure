@@ -22,6 +22,17 @@ hasHelm: true
 hasManifests: true
 
 helm:
+  # Classic (index.yaml-based) chart repo:
+  #   repoURL: https://<url>
+  # OCI registry chart: use the bare registry host/path, with NO scheme
+  # prefix (not "https://", and NOT "oci://" either) e.g:
+  #   repoURL: registry-1.docker.io/bitnamicharts
+  #   repoURL: ghcr.io/<org>/<charts-path>
+  # ArgoCD detects the source as a Helm chart (OCI or classic) purely from
+  # this repoURL + chart + version combination, so no extra flag is needed.
+  # If the OCI registry is private, register its credentials once as an
+  # ArgoCD Repository sealed secret (type: helm, enableOCI: "true")
+
   repoURL: https://<url>
   chart: <chart-name>
-  version: <version-number>
+  targetRevision: <version-number>

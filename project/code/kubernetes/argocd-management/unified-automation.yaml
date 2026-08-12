@@ -44,7 +44,7 @@ spec:
         {{- if (default false .hasHelm) }}
         - repoURL: '{{ .helm.repoURL }}'
           chart: '{{ .helm.chart }}'
-          targetRevision: '{{ .helm.version }}'
+          targetRevision: '{{ .helm.targetRevision }}'
           helm:
             valueFiles:
               - '$values/project/code/kubernetes/apps/{{ .appName }}/values.yaml'
