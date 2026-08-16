@@ -29,10 +29,20 @@ helm:
   #   repoURL: registry-1.docker.io/bitnamicharts
   #   repoURL: ghcr.io/<org>/<charts-path>
   # ArgoCD detects the source as a Helm chart (OCI or classic) purely from
-  # this repoURL + chart + version combination, so no extra flag is needed.
-  # If the OCI registry is private, register its credentials once as an
-  # ArgoCD Repository sealed secret (type: helm, enableOCI: "true")
+  # this repoURL + chart + targetRevision combination, so no extra flag is
+  # needed. If the OCI registry is private, register its credentials once
+  # as an ArgoCD Repository sealed secret (type: helm, enableOCI: "true")
 
   repoURL: https://<url>
   chart: <chart-name>
   targetRevision: <version-number>        # should be the chart version
+
+# Optional: extra entries for this Application's spec.syncPolicy.syncOptions
+# (uses ArgoCD's own "Key=Value" strings: https://argo-cd.readthedocs.io/en/stable/user-guide/sync-options/).
+# CreateNamespace=true is always included automatically and should not be added
+# here omit this whole key if you don't need anything beyond that.
+# Common use: ServerSideApply=true for charts whose CRDs are too large for
+# client-side apply's annotation size limit (see atlas-operator/config.yaml).
+# Do not use this if you do not need it
+syncOptions:
+  - ServerSideApply=true

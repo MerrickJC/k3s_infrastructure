@@ -60,3 +60,11 @@ spec:
           directory:
             recurse: true
         {{- end }}
+      {{- if hasKey . "syncOptions" }}
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
+          {{- range .syncOptions }}
+          - '{{ . }}'
+          {{- end }}
+      {{- end }}
