@@ -5,10 +5,10 @@ Dex requires creating client secrets that must be known by both the Dex pod and 
 
 For example:
 ```bash
-kubectl create secret generic headlamp-dex-client-secret --from-literal=HEADLAMP_DEX_CLIENT_SECRET="ABCD" -n headlamp --dry-run=client -o yaml | kubeseal --format yaml > headlamp-dex-client-secret.yaml
+kubectl create secret generic headlamp-dex-client-secret --from-literal=HEADLAMP_DEX_CLIENT_SECRET="ABCD" -n headlamp --dry-run=client -o yaml | kubeseal --format yaml > headlamp-client.yaml
 ```
 ```bash
-kubectl create secret generic headlamp-dex-client-secret --from-literal=HEADLAMP_DEX_CLIENT_SECRET="ABCD" -n dex --dry-run=client -o yaml | kubeseal --format yaml > headlamp-dex-client-secret.yaml
+kubectl create secret generic headlamp-dex-client-secret --from-literal=HEADLAMP_DEX_CLIENT_SECRET="ABCD" -n dex --dry-run=client -o yaml | kubeseal --format yaml > headlamp-dex.yaml
 ```
 
 I would recommend replacing "ABCD" with the output of `openssl rand -base64 32`. **REMEMBER both secrets must have the same value**, you are only generating the sealed secret twice to handle the two different namespaces.
