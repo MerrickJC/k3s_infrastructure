@@ -1,0 +1,305 @@
+# Wires the Jenkins Configuration as Code (JCasC) config into the Helm chart via
+# controller.JCasC.configScripts below.
+#
+# The ${...} placeholders in the config are resolved by JCasC's built-in environment
+# variable substitution, using the env vars injected below via containerEnv. The actual
+# secret values live in SealedSecrets that are NOT part of this repo checkout yet -
+# see secrets/README.md for the kubeseal commands needed to create them.
+controller:
+  # Additive to the chart's default controller.installPlugins (kubernetes, workflow-aggregator,
+  # git, configuration-as-code) - do NOT set installPlugins directly here, it replaces that list
+  # wholesale rather than merging, which would silently drop configuration-as-code and break JCasC.
+  additionalPlugins:
+    - oic-auth:4.718.ve731df6ca_88a_
+  JCasC:
+    configScripts:
+      jenkins-config: |
+        configuration-as-code:
+          deprecated: "reject"
+          restricted: "reject"
+          unknown: "reject"
+          version: "1"
+        credentials:
+          folder: {
+            }
+          providerImpl: {
+            }
+          system:
+            domainCredentials:
+            - credentials:
+              - gitHubApp:
+                  appID: "4633594"
+                  description: "GitHub App for Jenkins access to github repositories, etc."
+                  id: "jenkins-api-key-for-github"
+                  privateKey: "${JENKINS_GITHUB_TOKEN}"
+              - string:
+                  description: "Webhook for the Pull Request Status space"
+                  id: "jenkins-google-chat-pull-request-status"
+                  scope: GLOBAL
+                  secret: "${JENKINS_GOOGLE_CHAT_WEBHOOK_SECRET}"
+              domain: {
+                }
+          user: {
+            }
+        jenkins:
+          authorizationStrategy:
+            globalMatrix:
+              entries:
+              - group:
+                  name: "monashmotorsport"
+                  permissions:
+                  - "Overall/Manage"
+                  - "Overall/Read"
+              - group:
+                  name: "monashmotorsport:autonomous-systems"
+                  permissions:
+                  - "Overall/Administer"
+          crumbIssuer: "standard"
+          disableRememberMe: false
+          labelAtoms:
+          - name: "built-in"
+          - name: "jenkins-agent"
+          labelString: "jenkins-agent"
+          log: {
+            }
+          markupFormatter: "plainText"
+          mode: NORMAL
+          nodeMonitors:
+          - "architecture"
+          - "clock"
+          - diskSpace:
+              freeSpaceThreshold: "1GiB"
+              freeSpaceWarningThreshold: "2GiB"
+          - "swapSpace"
+          - tmpSpace:
+              freeSpaceThreshold: "1GiB"
+              freeSpaceWarningThreshold: "2GiB"
+          - "responseTime"
+          numExecutors: 3
+          primaryView:
+            all:
+              name: "all"
+          projectNamingStrategy: "standard"
+          quietPeriod: 5
+          remotingSecurity:
+            enabled: true
+          scmCheckoutRetryCount: 0
+          securityRealm:
+            oic:
+              clientId: "jenkins"
+              clientSecret: "${JENKINS_DEX_CLIENT_SECRET}"
+              serverConfiguration:
+                wellKnown:
+                  wellKnownOpenIDConfigurationUrl: "https://dex.merrickcampbell.au/.well-known/openid-configuration"
+                  scopesOverride: "openid email profile groups"
+              userNameField: "email"
+              emailFieldName: "email"
+              fullNameFieldName: "name"
+              groupsFieldName: "groups"
+              logoutFromOpenidProvider: true
+          slaveAgentPort: 50000
+          updateCenter:
+            sites:
+            - id: "default"
+              url: "https://updates.jenkins.io/update-center.json"
+          views:
+          - all:
+              name: "all"
+          viewsTabBar: "standard"
+        globalCredentialsConfiguration:
+          configuration:
+            providerFilter: "none"
+            typeFilter: "none"
+        appearance:
+          consoleUrlProvider: {
+            }
+          coverage:
+            defaultMetric: LINE
+            defaultName: "Coverage"
+            enableColumnByDefault: true
+          pipelineGraphView:
+            showGraphOnBuildPage: false
+            showGraphOnJobPage: false
+            showStageDurations: false
+            showStageNames: false
+          prism:
+            theme: PRISM
+          themeManager:
+            disableUserThemes: false
+            theme: "noOp"
+        security:
+          apiToken:
+            creationOfLegacyTokenEnabled: false
+            tokenGenerationOnCreationEnabled: false
+            usageStatisticsEnabled: true
+          apiTokenProperty: {
+            }
+          contentSecurityPolicy:
+            enforce: true
+          cps:
+            hideSandbox: false
+          crumb: {
+            }
+          gitHooks:
+            allowedOnAgents: false
+            allowedOnController: false
+          gitHostKeyVerificationConfiguration:
+            sshHostKeyVerificationStrategy: "knownHostsFileVerificationStrategy"
+          prism:
+            protectSourceCodeByPermission: false
+          queueItemAuthenticator: {
+            }
+          sSHD:
+            port: -1
+          scriptApproval:
+            forceSandbox: false
+          updateSiteWarningsConfiguration: {
+            }
+        unclassified:
+          administrativeMonitorsConfiguration: {
+            }
+          artifactManager: {
+            }
+          buildDiscarders:
+            configuredBuildDiscarders:
+            - "jobBuildDiscarder"
+          buildStepOperation:
+            enabled: false
+          casCGlobalConfig: {
+            }
+          computerRetentionCheckInterval: {
+            }
+          defaultDisplayUrlProvider: {
+            }
+          defaultFolderConfiguration: {
+            }
+          defaultView: {
+            }
+          email-ext:
+            adminRequiredForTemplateTesting: false
+            allowUnregisteredEnabled: false
+            charset: "UTF-8"
+            debugMode: false
+            defaultAttachBuildLog: 0
+            defaultBody: |-
+              $PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS:
+
+              Check console output at $BUILD_URL to view the results.
+            defaultSubject: "$PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS!"
+            defaultTriggerIds:
+            - "hudson.plugins.emailext.plugins.trigger.FailureTrigger"
+            mailAccount: {
+              }
+            maxAttachmentSize: -1
+            maxAttachmentSizeMb: -1
+            precedenceBulk: false
+            throttlingEnabled: false
+            watchingEnabled: false
+          enrichedSummaryConfig:
+            enrichedSummaryEnabled: false
+            globalBuildScanDetection: false
+            httpClientDelayBetweenRetriesInSeconds: 1
+            httpClientMaxRetries: 3
+            httpClientTimeoutInSeconds: 1
+          envVarsFilter: {
+            }
+          fingerprints:
+            fingerprintCleanupDisabled: false
+            storage: "file"
+          gitHubConfiguration:
+            apiRateLimitChecker: ThrottleForNormalize
+          gitHubPluginConfig:
+            hookUrl: "https://jenkins.merrickcampbell.au/github-webhook/"
+          globalDefaultFlowDurabilityLevel: {
+            }
+          globalLibraries: {
+            }
+          globalTimeOutConfiguration:
+            operations:
+            - "abortOperation"
+            overwriteable: false
+          globalUntrustedLibraries: {
+            }
+          googlechatnotification: {
+            }
+          injectionConfig:
+            allowUntrusted: false
+            checkForBuildAgentErrors: false
+            enabled: false
+            enforceUrl: false
+            injectCcudExtension: false
+            injectMavenExtension: false
+          junitTestResultStorage:
+            storage: "file"
+          location:
+            # TODO: set a real monitored admin address
+            adminAddress: "address not configured yet <nobody@nowhere>"
+            url: "https://jenkins.merrickcampbell.au/"
+          mailer:
+            charset: "UTF-8"
+            useSsl: false
+            useTls: false
+          myView: {
+            }
+          nodeProperties: {
+            }
+          pipeline-model-docker: {
+            }
+          plugin: {
+            }
+          pollSCM:
+            pollingThreadCount: 10
+          projectNamingStrategy: {
+            }
+          proxyConfigurationManager: {
+            }
+          quietPeriod: {
+            }
+          resourceRoot: {
+            }
+          scmGit:
+            addGitTagAction: false
+            allowSecondFetch: false
+            createAccountBasedOnEmail: false
+            disableGitToolChooser: false
+            hideCredentials: false
+            showEntireCommitSummaryInChanges: false
+            useExistingAccountWithSameEmail: false
+          scmRetryCount: {
+            }
+          shell: {
+            }
+          timestamper:
+            allPipelines: false
+            elapsedTimeFormat: "'<b>'HH:mm:ss.S'</b> '"
+            systemTimeFormat: "'<b>'HH:mm:ss'</b> '"
+          usageStatistics: {
+            }
+          viewsTabBar: {
+            }
+          whitelist:
+            enabled: false
+        tool:
+          git:
+            installations:
+            - home: "git"
+              name: "Default"
+          mavenGlobalConfig:
+            globalSettingsProvider: "standard"
+            settingsProvider: "standard"
+  containerEnv:
+    - name: JENKINS_GITHUB_TOKEN
+      valueFrom:
+        secretKeyRef:
+          name: jenkins-github-api-token
+          key: JENKINS_GITHUB_TOKEN
+    - name: JENKINS_GOOGLE_CHAT_WEBHOOK_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: jenkins-google-chat-webhook
+          key: JENKINS_GOOGLE_CHAT_WEBHOOK_SECRET
+    - name: JENKINS_DEX_CLIENT_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: jenkins-dex-client-secret
+          key: JENKINS_DEX_CLIENT_SECRET

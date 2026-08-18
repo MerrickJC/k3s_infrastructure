@@ -2,7 +2,7 @@ appName: jenkins
 namespace: jenkins
 
 hasHelm: true
-hasManifests: false
+hasManifests: true
 
 helm:
 
