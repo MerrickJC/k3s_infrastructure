@@ -1,0 +1,166 @@
+name: Jenkins JCasC validation
+
+# Validates apps/jenkins/values.yaml before it can reach the cluster, catching two
+# failure modes that have each crash-looped the real Jenkins pod:
+#   1. A JCasC key defined both by our configScripts and by the chart's own
+#      auto-generated default config (ConfiguratorConflictException).
+#   2. A JCasC key that belongs to a plugin not in controller.installPlugins /
+#      additionalPlugins, or a key whose field names don't match the installed
+#      plugin's actual schema.
+# See apps/jenkins/values.yaml's comments for the incidents that motivated this.
+
+on:
+  pull_request:
+    paths:
+      - "project/code/kubernetes/apps/jenkins/**"
+
+concurrency:
+  group: jenkins-jcasc-check-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  JENKINS_VALUES: project/code/kubernetes/apps/jenkins/values.yaml
+  JENKINS_APP_CONFIG: project/code/kubernetes/apps/jenkins/config.yaml
+  HELM_VERSION: v3.15.4
+
+jobs:
+  detect-static-conflicts:
+    name: Detect JCasC key conflicts
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/setup-helm@v4
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Render chart
+        run: |
+          set -euo pipefail
+          CHART_VERSION=$(awk '/targetRevision:/ {print $2}' "$JENKINS_APP_CONFIG")
+          helm repo add jenkins https://charts.jenkins.io
+          helm repo update
+          helm template jenkins jenkins/jenkins \
+            --version "$CHART_VERSION" \
+            -f "$JENKINS_VALUES" \
+            > rendered.yaml
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install pyyaml
+
+      - name: Check for JCasC key conflicts
+        run: python .github/scripts/check_jcasc_conflicts.py rendered.yaml
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rendered-jenkins-manifest
+          path: rendered.yaml
+
+  boot-validation:
+    name: Validate Jenkins boots with rendered config
+    needs: detect-static-conflicts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/setup-helm@v4
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Render chart
+        run: |
+          set -euo pipefail
+          CHART_VERSION=$(awk '/targetRevision:/ {print $2}' "$JENKINS_APP_CONFIG")
+          helm repo add jenkins https://charts.jenkins.io
+          helm repo update
+          helm template jenkins jenkins/jenkins \
+            --version "$CHART_VERSION" \
+            -f "$JENKINS_VALUES" \
+            > rendered.yaml
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install pyyaml
+
+      - name: Extract plugin list and JCasC config
+        run: |
+          set -euo pipefail
+          mkdir -p work/casc_configs
+          python .github/scripts/extract_jenkins_assets.py rendered.yaml work/
+          chmod -R 777 work
+
+      - name: Read pinned Jenkins image tag
+        id: image
+        run: |
+          set -euo pipefail
+          TAG=$(python -c "
+          import re
+          content = open('rendered.yaml', encoding='utf-8').read()
+          m = re.search(r'jenkins/jenkins:([^\"]+)', content)
+          print(m.group(1))
+          ")
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Install plugins
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            --entrypoint jenkins-plugin-cli \
+            -v "$PWD/work/plugins.txt:/usr/share/jenkins/ref/plugins.txt:ro" \
+            -v "$PWD/work/plugins:/usr/share/jenkins/ref/plugins" \
+            "jenkins/jenkins:${{ steps.image.outputs.tag }}" \
+            --verbose \
+            --plugin-file /usr/share/jenkins/ref/plugins.txt \
+            --plugin-download-directory /usr/share/jenkins/ref/plugins
+
+      - name: Boot Jenkins and check JCasC applies cleanly
+        run: |
+          set -euo pipefail
+          docker run -d --name jcasc-check \
+            -v "$PWD/work/plugins:/var/jenkins_home/plugins" \
+            -v "$PWD/work/casc_configs:/var/jenkins_home/casc_configs:ro" \
+            -e JAVA_OPTS="-Djenkins.install.runSetupWizard=false" \
+            -e CASC_JENKINS_CONFIG=/var/jenkins_home/casc_configs \
+            "jenkins/jenkins:${{ steps.image.outputs.tag }}"
+
+          # BootFailure/ConfiguratorException are the exact classes both real
+          # incidents threw - kept narrow so unrelated SEVERE-level noise elsewhere
+          # in the boot log (there is some, harmlessly, even on success) doesn't
+          # cause a false failure.
+          for i in $(seq 1 90); do
+            LOGS=$(docker logs jcasc-check 2>&1)
+            if echo "$LOGS" | grep -q "Jenkins is fully up and running"; then
+              echo "Jenkins booted successfully with the rendered plugin set and JCasC config."
+              exit 0
+            fi
+            if echo "$LOGS" | grep -qE "BootFailure|ConfiguratorException"; then
+              echo "$LOGS"
+              echo "::error::Jenkins failed to boot with this JCasC configuration"
+              exit 1
+            fi
+            sleep 2
+          done
+
+          echo "$LOGS"
+          echo "::error::Timed out waiting for Jenkins to finish booting"
+          exit 1
+
+      - if: always()
+        run: docker logs jcasc-check > jenkins-boot.log 2>&1 || true
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jenkins-boot-log
+          path: jenkins-boot.log

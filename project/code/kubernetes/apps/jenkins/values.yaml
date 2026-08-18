@@ -43,6 +43,17 @@ controller:
     - google-chat-notification:166.ve6b_de280f2e8
     # unclassified.pipeline-model-docker
     - docker-workflow:653.v2f2c08eff0ec
+    # appearance.themeManager - found by the boot-validation CI check, not by inference
+    # this time (jenkins.appearance.AppearanceCategory rejected it as an unknown attribute)
+    - theme-manager:346.v06cca_64c6a_37
+    # security.sSHD - also found by the boot-validation check
+    - sshd:3.384.vc89b_5e138cf9
+    # unclassified.globalTimeOutConfiguration and unclassified.buildStepOperation - both
+    # from hudson.plugins.build_timeout.operations.BuildStepOperation in this one plugin
+    - build-timeout:1.41
+    # unclassified.injectionConfig and unclassified.enrichedSummaryConfig - Develocity/Gradle
+    # Enterprise build-scan auto-injection and detection features
+    - gradle:2.19.1252.v15196b_5a_6e10
   JCasC:
     configScripts:
       jenkins-config: |
@@ -297,8 +308,12 @@ controller:
             }
           viewsTabBar: {
             }
-          whitelist:
-            enabled: false
+          # unclassified.whitelist was in the original export as {enabled: false} but couldn't
+          # be confidently attributed to a specific plugin (unlike the other gaps found by the
+          # boot-validation check, this one has no other fields to identify it by, and the value
+          # was already the disabled/off state). Dropped rather than guess a plugin that might be
+          # wrong. If Jenkins' own UI (Manage Jenkins > System) surfaces the real feature this
+          # controls, re-add it with the correct plugin pinned.
         tool:
           git:
             installations:
