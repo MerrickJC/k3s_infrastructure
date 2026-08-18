@@ -13,6 +13,10 @@ controller:
   # defaults (0 and an internal-only URL respectively)
   numExecutors: 3
   jenkinsUrl: "https://jenkins.merrickcampbell.au/"
+  # Chart default is [] (not unset), which still passes the template's truthiness check and
+  # renders labelString: "" unconditionally - same class of conflict as numExecutors/jenkinsUrl.
+  customJenkinsLabels:
+    - "jenkins-agent"
   # Additive to the chart's default controller.installPlugins (kubernetes, workflow-aggregator,
   # git, configuration-as-code) - do NOT set installPlugins directly here, it replaces that list
   # wholesale rather than merging, which would silently drop configuration-as-code and break JCasC.
@@ -86,7 +90,6 @@ controller:
           labelAtoms:
           - name: "built-in"
           - name: "jenkins-agent"
-          labelString: "jenkins-agent"
           log: {
             }
           nodeMonitors:
@@ -150,10 +153,6 @@ controller:
             disableUserThemes: false
             theme: "noOp"
         security:
-          apiToken:
-            creationOfLegacyTokenEnabled: false
-            tokenGenerationOnCreationEnabled: false
-            usageStatisticsEnabled: true
           apiTokenProperty: {
             }
           contentSecurityPolicy:
