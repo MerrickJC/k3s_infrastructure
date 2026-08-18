@@ -44,5 +44,36 @@ helm:
 # Common use: ServerSideApply=true for charts whose CRDs are too large for
 # client-side apply's annotation size limit (see atlas-operator/config.yaml).
 # Do not use this if you do not need it
-syncOptions:
-  - ServerSideApply=true
+# syncOptions:
+#   - ServerSideApply=true
+
+# All of the following are optional. Omit any key you don't need - each is
+# only forwarded onto the generated Application when the key is present.
+
+# Passed through verbatim to spec.ignoreDifferences - use for resources an
+# operator mutates in place (e.g. injected webhook CA bundles).
+# ignoreDifferences:
+#   - group: admissionregistration.k8s.io
+#     kind: MutatingWebhookConfiguration
+#     jsonPointers:
+#       - /webhooks/0/clientConfig/caBundle
+
+# Extra labels/annotations merged onto the generated Application's own
+# metadata (not onto the app's deployed resources).
+# labels:
+#   team: platform
+# annotations:
+#   example.com/owner: platform-team
+
+# Passed through verbatim to spec.syncPolicy.retry.
+# retry:
+#   limit: 5
+#   backoff:
+#     duration: 5s
+#     factor: 2
+#     maxDuration: 3m
+
+# If true, deleting this app's config.yaml deletes the ArgoCD Application
+# but leaves its live cluster resources in place instead of pruning them.
+# Set this for apps backed by durable state (see apps/postgresql/config.yaml).
+# preventDeletion: true
