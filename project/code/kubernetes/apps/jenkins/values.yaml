@@ -3,14 +3,42 @@
 #
 # The ${...} placeholders in the config are resolved by JCasC's built-in environment
 # variable substitution, using the env vars injected below via containerEnv. The actual
-# secret values live in SealedSecrets that are NOT part of this repo checkout yet -
-# see secrets/README.md for the kubeseal commands needed to create them.
+# secret values live in SealedSecrets
 controller:
+  # The chart auto-generates its own default JCasC config from these controller.* values
+  # (see templates/_helpers.tpl's "jenkins.casc.defaults") in ADDITION to configScripts below -
+  # both are separate YAML sources merged by JCasC, and JCasC errors on any key both sources
+  # define, even if the values are identical (ConfiguratorConflictException, fails the whole
+  # boot). numExecutors and jenkinsUrl are set here because they differ from the chart's
+  # defaults (0 and an internal-only URL respectively)
+  numExecutors: 3
+  jenkinsUrl: "https://jenkins.merrickcampbell.au/"
   # Additive to the chart's default controller.installPlugins (kubernetes, workflow-aggregator,
   # git, configuration-as-code) - do NOT set installPlugins directly here, it replaces that list
   # wholesale rather than merging, which would silently drop configuration-as-code and break JCasC.
+  # Each entry below was verified against the update center's dependency graph as NOT already
+  # transitively pulled in by another plugin here, and mapped from a specific JCasC key in the
+  # config below
   additionalPlugins:
     - oic-auth:4.718.ve731df6ca_88a_
+    # gitHubApp credential type
+    - github-branch-source:1983.vfa_27ed961853
+    # jenkins.authorizationStrategy.globalMatrix
+    - matrix-auth:3.3
+    # unclassified.email-ext
+    - email-ext:2038.v7b_8817a_499d9
+    # appearance.pipelineGraphView
+    - pipeline-graph-view:998.vc30deece0e36
+    # appearance.coverage
+    - code-coverage-api:4.99.0
+    # unclassified.timestamper
+    - timestamper:1.30
+    # unclassified.junitTestResultStorage
+    - junit:1421.v99cb_b_2577709
+    # unclassified.googlechatnotification (used by the Pull Request Status webhook credential)
+    - google-chat-notification:166.ve6b_de280f2e8
+    # unclassified.pipeline-model-docker
+    - docker-workflow:653.v2f2c08eff0ec
   JCasC:
     configScripts:
       jenkins-config: |
@@ -55,15 +83,12 @@ controller:
                   permissions:
                   - "Overall/Administer"
           crumbIssuer: "standard"
-          disableRememberMe: false
           labelAtoms:
           - name: "built-in"
           - name: "jenkins-agent"
           labelString: "jenkins-agent"
           log: {
             }
-          markupFormatter: "plainText"
-          mode: NORMAL
           nodeMonitors:
           - "architecture"
           - "clock"
@@ -75,11 +100,9 @@ controller:
               freeSpaceThreshold: "1GiB"
               freeSpaceWarningThreshold: "2GiB"
           - "responseTime"
-          numExecutors: 3
           primaryView:
             all:
               name: "all"
-          projectNamingStrategy: "standard"
           quietPeriod: 5
           remotingSecurity:
             enabled: true
@@ -97,7 +120,6 @@ controller:
               fullNameFieldName: "name"
               groupsFieldName: "groups"
               logoutFromOpenidProvider: true
-          slaveAgentPort: 50000
           updateCenter:
             sites:
             - id: "default"
@@ -234,7 +256,6 @@ controller:
           location:
             # TODO: set a real monitored admin address
             adminAddress: "address not configured yet <nobody@nowhere>"
-            url: "https://jenkins.merrickcampbell.au/"
           mailer:
             charset: "UTF-8"
             useSsl: false
