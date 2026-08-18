@@ -11,3 +11,7 @@ helm:
 
 syncOptions:
   - ServerSideApply=true    # needed due to long CRDs
+
+# Deleting this app's config.yaml deletes the ArgoCD Application but leaves
+# the live CloudNativePG cluster/PVCs in place, instead of pruning them.
+preventDeletion: true
