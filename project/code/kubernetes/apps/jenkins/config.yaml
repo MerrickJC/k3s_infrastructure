@@ -1,0 +1,11 @@
+appName: jenkins
+namespace: jenkins
+
+hasHelm: true
+hasManifests: false
+
+helm:
+
+  repoURL: https://charts.jenkins.io
+  chart: jenkins
+  targetRevision: 5.9.54
