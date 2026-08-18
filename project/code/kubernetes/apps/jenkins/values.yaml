@@ -36,7 +36,7 @@ controller:
                   description: "Webhook for the Pull Request Status space"
                   id: "jenkins-google-chat-pull-request-status"
                   scope: GLOBAL
-                  secret: "${JENKINS_GOOGLE_CHAT_WEBHOOK_SECRET}"
+                  secret: "${JENKINS_GOOGLE_CHAT_SECRET}"
               domain: {
                 }
           user: {
@@ -293,11 +293,11 @@ controller:
         secretKeyRef:
           name: jenkins-github-api-token
           key: JENKINS_GITHUB_TOKEN
-    - name: JENKINS_GOOGLE_CHAT_WEBHOOK_SECRET
+    - name: JENKINS_GOOGLE_CHAT_SECRET
       valueFrom:
         secretKeyRef:
-          name: jenkins-google-chat-webhook
-          key: JENKINS_GOOGLE_CHAT_WEBHOOK_SECRET
+          name: jenkins-google-chat-secret
+          key: JENKINS_GOOGLE_CHAT_SECRET
     - name: JENKINS_DEX_CLIENT_SECRET
       valueFrom:
         secretKeyRef:

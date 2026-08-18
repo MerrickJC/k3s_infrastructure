@@ -38,7 +38,7 @@ kubectl create secret generic jenkins-github-api-token --from-file=JENKINS_GITHU
 Used by the "Pull Request Status" Google Chat webhook credential.
 
 ```bash
-kubectl create secret generic jenkins-google-chat-webhook --from-literal=JENKINS_GOOGLE_CHAT_WEBHOOK_SECRET="<value>" -n jenkins --dry-run=client -o yaml | kubeseal --format yaml > jenkins-google-chat-webhook.yaml
+kubectl create secret generic jenkins-google-chat-secret --from-literal=JENKINS_GOOGLE_CHAT_SECRET="<value>" -n jenkins --dry-run=client -o yaml | kubeseal --format yaml > jenkins-google-chat-secret.yaml
 ```
 
 ## 3. Dex OIDC client secret
