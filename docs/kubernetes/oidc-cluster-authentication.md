@@ -31,7 +31,7 @@ kube-apiserver-arg:
 
 Then restart K3s and confirm it is healthy **using your existing certificate-based admin kubeconfig**. This is typically stored in the ~/.kube/config file (do this before anything else to proves the change didn't break the API server):
 
-```
+```bash
 sudo systemctl restart k3s
 sudo systemctl status k3s
 kubectl get nodes   # using the existing admin kubeconfig, NOT an OIDC login
@@ -48,7 +48,7 @@ Each person needs `kubectl`, `krew`, and the `oidc-login` plugin (see [commandli
 ### Login
 Then run:
 
-```
+```bash
 kubectl oidc-login setup \
   --oidc-issuer-url=https://dex.merrickcampbell.au \
   --oidc-client-id=kubernetes \
@@ -65,19 +65,19 @@ E0812 00:39:33.761993  201838 memcache.go:265] "Unhandled Error" err="couldn't g
 error: You must be logged in to the server (the server has asked for the client to provide credentials)
 ```
 then you can try removing your token using:
-```
+```bash
 kubectl oidc-login clean
 ```
 You will be asked to login again when you run the next command
 
 ### Configuration
 After creating the user, you also need to configure the cluster and create a context which links the cluster to the user. Part of the configuration for the cluster involves using the certificates for the cluster's certificate authority to ensure that the cluster is who it says it is. MMS should attempt to maintain up-to-date certificates in [k3s-ca.crt](./k3s-ca.crt) so that developers don't need to go out of their way to find the certificates. You can, however, find the certificates by logging into the node that hosts the K3s server and running the following command:
-```
+```bash
 sudo grep "certificate-authority-data" /etc/rancher/k3s/k3s.yaml | awk "{print \$2}" | base64 -d > k3s-ca.crt
 ```
 
 Copy the `k3s-ca.crt` file onto your local machine (or use the [one provided](./k3s-ca.crt) if it is up-to-date) and run the following commands:
-```
+```bash
 kubectl config set-cluster mms-cluster --server=<server-name-or-ip-and-port> --certificate-authority=k3s-ca.crt --embed-certs=true
 kubectl config set-context mms-cluster-context --cluster=mms-cluster --user=oidc
 kubectl config use-context mms-cluster-context

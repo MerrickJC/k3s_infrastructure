@@ -7,14 +7,14 @@ We want as much of the cloud configuration as possible to be defined using Infra
 
 ## How To Create One?
 Assume that you have some value that you are trying to store in a secret in Kubernetes. Please note that a sealed secret can only be used in the namespace it was created. Attempting to use the sealed secret in a different namespace will not be permitted unless an appropriate ServiceAccount, Role, and RoleBinding exists (this should be avoided). 
-```
+```bash
 kubectl create secret generic <secret-name> --from-literal=<secret-key>=<secret-value> -n <namespace> --dry-run=client -o yaml | kubeseal --format yaml > sealed-secret.yaml
 ```
 
 ## How To Migrate The Sealed Secret Tool?
 ### In The Old Cluster
 Run the following command while connected to the old cluster:
-```
+```bash
 kubectl get secret -n kube-system -l sealedsecrets.bitnami.com/sealed-secrets-key -o yaml >main.key
 ```
 **THIS STORES THE PRIVATE ENCRYPTION KEY TO A FILE LOCALLY ON YOUR DEVICE. DO NOT LEAK THIS. DO NOT COMMIT THIS TO GIT. DO NOT SEND THIS VIA MESSAGE.** This encryption key can decrypt any secret stored as a sealed secret in the Git repository, so you should not retain it on your device for longer than you need to.
@@ -23,7 +23,7 @@ kubectl get secret -n kube-system -l sealedsecrets.bitnami.com/sealed-secrets-ke
 Deploy the sealed secret tool into the new cluster. You can do that by setting up ArgoCD like normal and having it create the sealed secret tool
 
 Once the tool is deployed, run the following commands while connected to the new cluster:
-```
+```bash
 kubectl apply -f main.key
 kubectl delete pod -n kube-system -l name=sealed-secrets-controller
 ```

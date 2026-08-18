@@ -7,7 +7,7 @@ Throughout this guide I will assume that you already have a cluster setup and th
 
 ## ArgoCD Setup
 ArgoCD is used to self-manage ArgoCD. To achieve this you just need to bootstrap the deployment once and then it will be able to self-manage from there. You can do this by running the following command from the root of the project repository:
-```
+```bash
 kubectl apply -k ./project/code/kubernetes/argocd-management
 ```
 
@@ -56,7 +56,7 @@ where:
 - `sshPrivateKey` should be an SSH key for the repository. On GitHub I suggest using a read-only deployment key specific to the repository, as it will minimise risk and allow you to revoke the key easily in the future if needed
 
 Then run:
-```
+```bash
 kubeseal -f repo-secret.yaml -w repo-sealed-secret.yaml
 ```
 Copy that file into the [argocd-management folder](../project/code/kubernetes/argocd-management/) and make sure that it is added to the [`kustomization.yaml`](../project/code/kubernetes/argocd-management/kustomization.yaml) as a resource so that it gets applied to the cluster. If there is already a file there for a git repository that you are no longer using, you can just overwrite that file.

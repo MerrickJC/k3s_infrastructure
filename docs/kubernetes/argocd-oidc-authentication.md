@@ -17,7 +17,7 @@ Because ArgoCD is bootstrapped by referencing the upstream `install.yaml` direct
 
 ## Setting up the client secret
 ArgoCD requires sealing secrets like any other Dex client
-```
+```bash
 kubectl create secret generic argocd-dex-client-secret --from-literal=ARGOCD_DEX_CLIENT_SECRET="<random-value>" -n dex --dry-run=client -o yaml | kubeseal --format yaml > project/code/kubernetes/apps/dex/secrets/argocd-dex.yaml
 
 kubectl create secret generic argocd-dex-client-secret --from-literal=ARGOCD_DEX_CLIENT_SECRET="<same-random-value>" -n argocd --dry-run=client -o yaml | kubeseal --format yaml > project/code/kubernetes/apps/dex/secrets/argocd-client.yaml

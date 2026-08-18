@@ -4,10 +4,10 @@ Dex requires creating client secrets that must be known by both the Dex pod and 
 > **Note**: secrets are namespace scoped, meaning there won't be a conflict between the secrets' names and so you don't have to change anything other than the namespaces
 
 For example:
-```
+```bash
 kubectl create secret generic headlamp-dex-client-secret --from-literal=HEADLAMP_DEX_CLIENT_SECRET="ABCD" -n headlamp --dry-run=client -o yaml | kubeseal --format yaml > headlamp-dex-client-secret.yaml
 ```
-```
+```bash
 kubectl create secret generic headlamp-dex-client-secret --from-literal=HEADLAMP_DEX_CLIENT_SECRET="ABCD" -n dex --dry-run=client -o yaml | kubeseal --format yaml > headlamp-dex-client-secret.yaml
 ```
 
@@ -22,6 +22,6 @@ In the event that the secret needs to be rotated, you will have to regenerate bo
 ## Naming Convention
 I have chosen an arbitrary naming convention:
 - Dex namespace:
-    - ```<client>-dex.yaml```
+    - `<client>-dex.yaml`
 - Client's namespace:
-    - ```<client>-client.yaml```
+    - `<client>-client.yaml`

@@ -19,7 +19,7 @@ You can verify installation by ensuring that you can run ```kubectl krew --help`
 ### Setup
 
 After installing the above  you will need to run the following commands
-```
+```bash
 kubectl krew install oidc-login
 ```
 
