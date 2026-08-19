@@ -169,9 +169,18 @@ controller:
                                             // FilePath context, which is the build workspace by default and
                                             // rejects a leading '/' - dir() repoints that context at the mount
                                             // path so a plain relative glob works.
+                                            //
+                                            // sandbox: true runs the DSL scripts through the Job DSL sandbox
+                                            // instead of requiring a one-time admin approval per script (Manage
+                                            // Jenkins > In-process Script Approval) on every content change. Only
+                                            // safe because these scripts stick to standard Job DSL closures
+                                            // (folder/multibranchPipelineJob/branchSources/traits/etc) with no
+                                            // raw configure{} XML or arbitrary Groovy - if a future script needs
+                                            // that, it'll need sandbox: false and a manual approval instead.
                                             dir('/var/jenkins_home/job-dsl') {
                                                 jobDsl targets: '*.groovy',
-                                                       removedJobAction: 'DISABLE'
+                                                       removedJobAction: 'DISABLE',
+                                                       sandbox: true
                                             }
                                         }
                                     }
