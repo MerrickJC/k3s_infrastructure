@@ -1,0 +1,145 @@
+# Job DSL scripts, one file per team folder. This ConfigMap is the single source of truth for
+# these scripts (there are no separate .groovy files elsewhere to keep in sync) - persistence.
+# volumes/mounts in values.yaml mounts it onto the Jenkins controller at /var/jenkins_home/job-dsl,
+# and the seed job (see the `jobs:` block in values.yaml's JCasC config) runs `jobDsl` against the
+# mounted *.groovy files to (re)create the folders/jobs below. See docs/kubernetes/jenkins-jobs.md
+# for how to add a new team folder or repository.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jenkins-job-dsl
+  namespace: jenkins
+data:
+  autonomous-systems.groovy: |
+    folder('Autonomous Systems') {
+        description('Folder for all Autonomous Systems repositories/projects')
+    }
+
+    multibranchPipelineJob('Autonomous Systems/mms_ws2') {
+        description('Pipeline 2')
+
+        branchSources {
+            github {
+                id('1')
+                scanCredentialsId('jenkins-api-key-for-github')
+                repoOwner('monashmotorsport')
+                repository('mms_ws2')
+                traits {
+                    // strategyId 3 = discover all branches (not just ones without an open PR)
+                    gitHubBranchDiscovery {
+                        strategyId(3)
+                    }
+                    gitHubPullRequestDiscovery {
+                        strategyId(2)
+                    }
+                    gitHubForkDiscovery {
+                        strategyId(2)
+                        trust {
+                            gitHubTrustPermissions()
+                        }
+                    }
+                }
+            }
+        }
+
+        factory {
+            workflowBranchProjectFactory {
+                scriptPath('Jenkinsfile')
+            }
+        }
+
+        // Re-scan every 4 hours for new/removed branches and PRs.
+        triggers {
+            periodicFolderTrigger {
+                interval('4h')
+            }
+        }
+
+        // master and PR branches are built by their own event triggers elsewhere (PR webhook /
+        // push), not by this periodic branch-indexing scan - only feature branches should build
+        // on indexing.
+        properties {
+            suppressAutomaticTriggering {
+                triggeredBranchesRegex('^(master|PR-\\d+)$')
+                strategy('INDEXING')
+            }
+        }
+    }
+  dynamics.groovy: |
+    folder('Dynamics') {
+        description('This folder is for any VP related repositories')
+    }
+
+    multibranchPipelineJob('Dynamics/m26_m150_firmware') {
+        description('This repository contains all the MoTeC software relevant to M26')
+
+        branchSources {
+            github {
+                id('1')
+                scanCredentialsId('jenkins-api-key-for-github')
+                repoOwner('monashmotorsport')
+                repository('m26_m150_firmware')
+                traits {
+                    // strategyId 1 = exclude branches that are also filed as PRs (avoids
+                    // building the same commit twice, once as a branch and once as a PR)
+                    gitHubBranchDiscovery {
+                        strategyId(1)
+                    }
+                    gitHubPullRequestDiscovery {
+                        strategyId(2)
+                    }
+                    gitHubForkDiscovery {
+                        strategyId(2)
+                        trust {
+                            gitHubTrustPermissions()
+                        }
+                    }
+                }
+            }
+        }
+
+        factory {
+            workflowBranchProjectFactory {
+                scriptPath('Jenkinsfile')
+            }
+        }
+    }
+  electrical-systems.groovy: |
+    folder('Electrical Systems (ESYS)') {
+        description('Folder for all Electrical Systems (ESYS) projects/repositories')
+    }
+
+    multibranchPipelineJob('Electrical Systems (ESYS)/2025-2026-BMS-Firmware') {
+        description("This repository is for ESYS' BMS software for their Battery Management System.")
+
+        branchSources {
+            github {
+                id('1')
+                scanCredentialsId('jenkins-api-key-for-github')
+                repoOwner('monashmotorsport')
+                repository('2025-2026-BMS-Firmware')
+                traits {
+                    // strategyId 1 = exclude branches that are also filed as PRs (avoids
+                    // building the same commit twice, once as a branch and once as a PR)
+                    gitHubBranchDiscovery {
+                        strategyId(1)
+                    }
+                    gitHubPullRequestDiscovery {
+                        strategyId(2)
+                    }
+                    gitHubForkDiscovery {
+                        strategyId(2)
+                        trust {
+                            gitHubTrustPermissions()
+                        }
+                    }
+                }
+            }
+        }
+
+        factory {
+            workflowBranchProjectFactory {
+                scriptPath('Jenkinsfile')
+            }
+        }
+    }

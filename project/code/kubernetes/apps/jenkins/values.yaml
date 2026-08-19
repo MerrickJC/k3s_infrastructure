@@ -13,10 +13,6 @@ controller:
   # defaults (0 and an internal-only URL respectively)
   numExecutors: 3
   jenkinsUrl: "https://jenkins.merrickcampbell.au/"
-  # Chart default is [] (not unset), which still passes the template's truthiness check and
-  # renders labelString: "" unconditionally - same class of conflict as numExecutors/jenkinsUrl.
-  customJenkinsLabels:
-    - "jenkins-agent"
   # Additive to the chart's default controller.installPlugins (kubernetes, workflow-aggregator,
   # git, configuration-as-code) - do NOT set installPlugins directly here, it replaces that list
   # wholesale rather than merging, which would silently drop configuration-as-code and break JCasC.
@@ -54,6 +50,9 @@ controller:
     # unclassified.injectionConfig and unclassified.enrichedSummaryConfig - Develocity/Gradle
     # Enterprise build-scan auto-injection and detection features
     - gradle:2.19.1252.v15196b_5a_6e10
+    # jobs (the seed job below) - Job DSL engine that turns the mounted *.groovy scripts into
+    # actual folder/multibranch-pipeline job objects
+    - job-dsl:3732.v9a_c49a_61a_313
   JCasC:
     configScripts:
       jenkins-config: |
@@ -146,6 +145,58 @@ controller:
           configuration:
             providerFilter: "none"
             typeFilter: "none"
+        # Seed job: (re)provisions every other job from the Job DSL scripts in the
+        # jenkins-job-dsl ConfigMap (see job-dsl-configmap.yaml in this folder), which
+        # persistence.volumes/mounts below mount onto this controller at /var/jenkins_home/job-dsl.
+        # This is the one job NOT defined via Job DSL itself (a seed job can't create itself) -
+        # JCasC's jobs: block is how it's still defined as code rather than clicked together once.
+        # removedJobAction is DISABLE (not DELETE) deliberately: per docs/kubernetes/jenkins-jobs.md
+        jobs:
+        - script: |
+            pipelineJob('seed-job') {
+                description('Provisions all other Jenkins jobs from the Job DSL scripts mounted at /var/jenkins_home/job-dsl. Source: project/code/kubernetes/apps/jenkins/job-dsl-configmap.yaml in the GitOps repo. Run manually (Build Now) - not scheduled or webhook-triggered yet.')
+                definition {
+                    cps {
+                        script('''
+                            pipeline {
+                                agent any
+                                stages {
+                                    stage('Run Job DSL') {
+                                        steps {
+                                            // Scripts come straight from the mounted ConfigMap for now - no
+                                            // separate DSL repo/checkout step needed yet.
+                                            jobDsl targets: '/var/jenkins_home/job-dsl/*.groovy',
+                                                   removedJobAction: 'DISABLE'
+                                        }
+                                    }
+                                }
+                            }
+
+                            // --- Future: once the DSL scripts move into their own git repo, replace the
+                            // stage above with a checkout stage plus a targets path into the checkout, e.g.:
+                            //
+                            // pipeline {
+                            //     agent any
+                            //     stages {
+                            //         stage('Checkout DSL repo') {
+                            //             steps {
+                            //                 git url: 'https://github.com/monashmotorsport/jenkins-jobs.git',
+                            //                     branch: 'main',
+                            //                     credentialsId: 'jenkins-api-key-for-github'
+                            //             }
+                            //         }
+                            //         stage('Run Job DSL') {
+                            //             steps {
+                            //                 jobDsl targets: 'jobs/*.groovy', removedJobAction: 'DISABLE'
+                            //             }
+                            //         }
+                            //     }
+                            // }
+                        '''.stripIndent())
+                        sandbox(true)
+                    }
+                }
+            }
         appearance:
           consoleUrlProvider: {
             }
@@ -244,8 +295,28 @@ controller:
             hookUrl: "https://jenkins.merrickcampbell.au/github-webhook/"
           globalDefaultFlowDurabilityLevel: {
             }
-          globalLibraries: {
-            }
+          globalLibraries:
+            libraries:
+            - name: "jenkins_libraries"
+              defaultVersion: "main"
+              implicit: false
+              allowVersionOverride: true
+              includeInChangesets: true
+              retriever:
+                modernSCM:
+                  scm:
+                    github:
+                      repoOwner: "monashmotorsport"
+                      repository: "jenkins_libraries"
+                      credentialsId: "jenkins-api-key-for-github"
+                      traits:
+                      - gitHubBranchDiscovery:
+                          strategyId: 1
+                      - gitHubPullRequestDiscovery:
+                          strategyId: 2
+                      - gitHubForkDiscovery:
+                          strategyId: 2
+                          trust: "permission"
           globalTimeOutConfiguration:
             operations:
             - "abortOperation"
@@ -338,3 +409,30 @@ controller:
         secretKeyRef:
           name: jenkins-dex-client-secret
           key: JENKINS_DEX_CLIENT_SECRET
+
+# agent.enabled defaults to true and controller.JCasC.defaultConfig (above) defaults to true,
+# so the chart already auto-generates a Kubernetes cloud + default pod template via JCasC - no
+# manual `clouds:` block needed here. But the default pod template label is
+# "{{ .Release.Name }}-{{ .Values.agent.componentName }}", and agent.componentName itself
+# defaults to the literal string "jenkins-agent" - with ArgoCD's Release.Name being "jenkins"
+# (the Application name), that resolves to label "jenkins-jenkins-agent", NOT "jenkins-agent".
+# Pipelines requesting `agent { label 'jenkins-agent' }` (see customJenkinsLabels/labelAtoms
+# above) don't match that. customJenkinsLabels here is additive to the default label, so this
+# makes the pod template also carry "jenkins-agent" and actually satisfy those pipelines.
+agent:
+  customJenkinsLabels:
+    - "jenkins-agent"
+
+# Mounts the jenkins-job-dsl ConfigMap (job-dsl-configmap.yaml, in this same folder) onto the
+# controller so the seed job (see the `jobs:` block in controller.JCasC.configScripts above) can
+# run `jobDsl targets: '/var/jenkins_home/job-dsl/*.groovy'` against it directly, with no git
+# checkout needed yet.
+persistence:
+  volumes:
+    - name: job-dsl
+      configMap:
+        name: jenkins-job-dsl
+  mounts:
+    - name: job-dsl
+      mountPath: /var/jenkins_home/job-dsl
+      readOnly: true
