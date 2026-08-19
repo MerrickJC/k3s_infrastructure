@@ -164,9 +164,15 @@ controller:
                                     stage('Run Job DSL') {
                                         steps {
                                             // Scripts come straight from the mounted ConfigMap for now - no
-                                            // separate DSL repo/checkout step needed yet.
-                                            jobDsl targets: '/var/jenkins_home/job-dsl/*.groovy',
-                                                   removedJobAction: 'DISABLE'
+                                            // separate DSL repo/checkout step needed yet. jobDsl's targets: is
+                                            // always resolved as an Ant fileset glob relative to the current
+                                            // FilePath context, which is the build workspace by default and
+                                            // rejects a leading '/' - dir() repoints that context at the mount
+                                            // path so a plain relative glob works.
+                                            dir('/var/jenkins_home/job-dsl') {
+                                                jobDsl targets: '*.groovy',
+                                                       removedJobAction: 'DISABLE'
+                                            }
                                         }
                                     }
                                 }
