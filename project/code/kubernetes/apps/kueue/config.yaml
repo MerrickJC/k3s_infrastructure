@@ -1,0 +1,10 @@
+appName: kueue
+namespace: kueue-system
+
+hasHelm: true
+hasManifests: true
+
+helm:
+  repoURL: registry.k8s.io/kueue/charts
+  chart: kueue
+  targetRevision: 0.19.1

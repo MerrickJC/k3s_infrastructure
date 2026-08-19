@@ -1,0 +1,65 @@
+# Cluster-scoped Kueue resources shared by every service. Per-service LocalQueues live alongside each
+# service's own WorkflowTemplates instead, e.g. apps/experiment-workflows/local-queue.yaml.
+
+# Matches nodes in the experiment-burst pool. `nodeLabels` must match whatever label the burst
+# MachineDeployment's nodes actually carry (apps/cluster-api)
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: ResourceFlavor
+metadata:
+  name: experiment-burst
+spec:
+  nodeLabels:
+    node-role: experiment-burst
+  tolerations:
+    - key: experiment-burst
+      operator: Equal
+      value: "true"
+      effect: NoSchedule
+---
+# Handles the flapping scenario: Kueue only admits a workload once real capacity is confirmed
+# (via the AdmissionCheck below), rather than every pending pod individually triggering the autoscaler.
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: ClusterQueue
+metadata:
+  name: experiment-execution
+spec:
+  namespaceSelector: {} # any namespace may bind a LocalQueue to this ClusterQueue
+  resourceGroups:
+    - coveredResources: ["cpu", "memory"]
+      flavors:
+        - name: experiment-burst
+          resources:
+            # Placeholder quota -- tune to the actual burst pool's max size once apps/cluster-api's
+            # MachineDeployment capacity is decided.
+            - name: cpu
+              nominalQuota: "32"
+            - name: memory
+              nominalQuota: 64Gi
+  admissionChecks:
+    - experiment-burst-provisioning
+---
+# Wires Kueue to Cluster Autoscaler's ProvisioningRequest API
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: AdmissionCheck
+metadata:
+  name: experiment-burst-provisioning
+spec:
+  controllerName: kueue.x-k8s.io/provisioning-request
+  parameters:
+    apiGroup: kueue.x-k8s.io
+    kind: ProvisioningRequestConfig
+    name: experiment-burst-provisioning
+---
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: ProvisioningRequestConfig
+metadata:
+  name: experiment-burst-provisioning
+spec:
+  # Generic (non-GKE) ProvisioningClass supported by Cluster Autoscaler's in-tree ProvisioningRequest
+  # handling. Per the plan's "Open question, verify early": confirm this is actually honoured by the
+  # clusterapi CA provider once apps/cluster-autoscaler is live -- if not, Kueue still gates admission
+  # on real capacity and CA falls back to reacting to the resulting Pending pods.
+  provisioningClassName: check-capacity.autoscaling.x-k8s.io
+  managedResources: ["cpu", "memory"]
+  retryStrategy:
+    backoffLimitCount: 3
