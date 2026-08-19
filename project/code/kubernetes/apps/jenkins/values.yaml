@@ -170,17 +170,17 @@ controller:
                                             // rejects a leading '/' - dir() repoints that context at the mount
                                             // path so a plain relative glob works.
                                             //
-                                            // sandbox: true runs the DSL scripts through the Job DSL sandbox
-                                            // instead of requiring a one-time admin approval per script (Manage
-                                            // Jenkins > In-process Script Approval) on every content change. Only
-                                            // safe because these scripts stick to standard Job DSL closures
-                                            // (folder/multibranchPipelineJob/branchSources/traits/etc) with no
-                                            // raw configure{} XML or arbitrary Groovy - if a future script needs
-                                            // that, it'll need sandbox: false and a manual approval instead.
+                                            // Not sandboxed: sandbox: true was tried and rejected - it requires
+                                            // a QueueItemAuthenticator (Authorize Project plugin) telling Jenkins
+                                            // whose permissions to enforce during job creation, which is a real
+                                            // plugin + security-identity decision this repo isn't taking on yet
+                                            // (see docs/kubernetes/jenkins-jobs.md, "Script approval"). Unsandboxed
+                                            // means the first run - and any run after a script's content changes -
+                                            // needs a one-time admin approval under Manage Jenkins > In-process
+                                            // Script Approval.
                                             dir('/var/jenkins_home/job-dsl') {
                                                 jobDsl targets: '*.groovy',
-                                                       removedJobAction: 'DISABLE',
-                                                       sandbox: true
+                                                       removedJobAction: 'DISABLE'
                                             }
                                         }
                                     }
