@@ -316,7 +316,7 @@ controller:
                           strategyId: 2
                       - gitHubForkDiscovery:
                           strategyId: 2
-                          trust: "permission"
+                          trust: "trustPermission"
           globalTimeOutConfiguration:
             operations:
             - "abortOperation"
