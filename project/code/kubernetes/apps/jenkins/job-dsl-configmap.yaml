@@ -10,7 +10,7 @@ metadata:
   name: jenkins-job-dsl
   namespace: jenkins
 data:
-  autonomous-systems.groovy: |
+  autonomous_systems.groovy: |
     folder('Autonomous Systems') {
         description('Folder for all Autonomous Systems repositories/projects')
     }
@@ -104,7 +104,7 @@ data:
             }
         }
     }
-  electrical-systems.groovy: |
+  electrical_systems.groovy: |
     folder('Electrical Systems (ESYS)') {
         description('Folder for all Electrical Systems (ESYS) projects/repositories')
     }
