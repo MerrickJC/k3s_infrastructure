@@ -1,0 +1,42 @@
+name: Renovate
+
+# Self-hosted (no third-party GitHub App installed) - runs the actual Renovate engine
+# against .github/renovate.json5 on a schedule, or on demand via workflow_dispatch.
+#
+# Requires a repo secret RENOVATE_TOKEN: a fine-grained PAT scoped to just this repo, with
+# Contents (read/write), Pull requests (read/write), and Issues (read/write - Renovate uses
+# an issue for the Dependency Dashboard) permissions. This CANNOT be the default
+# secrets.GITHUB_TOKEN: GitHub deliberately blocks PRs opened with the default token from
+# triggering other pull_request-triggered workflows in the same repo (anti-recursion
+# safeguard), which would silently stop jenkins-jcasc-check.yml and
+# helm-app-render-check.yml from ever running on Renovate's own PRs - defeating the reason
+# this exists. Create the PAT under your own account, then add it as a repo secret named
+# RENOVATE_TOKEN under Settings > Secrets and variables > Actions.
+
+on:
+  schedule:
+    - cron: "0 4 * * 1" # Monday 04:00 UTC - how often this workflow itself wakes up to
+    # check for updates. renovate.json5's own "schedule:weekly" preset separately governs
+    # when Renovate is willing to actually open PRs, so this just needs to be at least as
+    # frequent.
+  workflow_dispatch: {}
+
+concurrency:
+  group: renovate
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  renovate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Self-hosted Renovate
+        uses: renovatebot/github-action@v46.2.2
+        with:
+          configurationFile: .github/renovate.json5
+          token: "${{ secrets.RENOVATE_TOKEN }}"

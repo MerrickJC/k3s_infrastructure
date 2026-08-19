@@ -1,0 +1,102 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: ["config:recommended", "schedule:weekly"],
+
+  // Every dependency here reaches the live cluster the moment a PR merges - every app's
+  // ArgoCD Application runs syncPolicy.automated: {prune: true, selfHeal: true}
+  // (argocd-management/unified-automation.yaml). There is no post-merge staging step.
+  // Renovate must never merge on its own; a human + passing CI is the only gate.
+  automerge: false,
+  dependencyDashboard: true,
+
+  // apps/example is a permanently-excluded template folder (per CLAUDE.md), not a real
+  // app - its config.yaml has literal placeholder text like "repoURL: https://<url>" that
+  // would otherwise trip a harmless-but-noisy "Invalid regex manager registryUrl" warning.
+  // Note: excluding this via managerFilePatterns' "!pattern" entries does NOT work - that
+  // field doesn't implement gitignore-style negation (verified: a lone "!pattern" matches
+  // nothing at all, so it silently fails to override the positive include) - ignorePaths
+  // is the correct, actually-reliable mechanism.
+  ignorePaths: ["project/code/kubernetes/apps/example/**"],
+
+  packageRules: [
+    {
+      description: "Extra caution: cloudnative-pg is the postgres operator - a bad major bump risks data loss, not just downtime (see prior 'prevent postgres database contents deletion' incident).",
+      matchFileNames: ["project/code/kubernetes/apps/postgresql/**"],
+      matchUpdateTypes: ["major"],
+      labels: ["needs-manual-review", "database"],
+      dependencyDashboardApproval: true,
+    },
+    {
+      description: "Extra caution: cert-manager issues certs cluster-wide - a bad major bump has cluster-wide blast radius.",
+      matchFileNames: ["project/code/kubernetes/apps/cert-manager/**"],
+      matchUpdateTypes: ["major"],
+      labels: ["needs-manual-review"],
+      dependencyDashboardApproval: true,
+    },
+  ],
+
+  customManagers: [
+    // Helm chart versions for apps using a classic (non-OCI) chart repository - the
+    // majority of apps/*/config.yaml. atlas-operator/kueue (OCI repos, handled by the
+    // separate rule below) self-exclude here since their repoURL doesn't start with
+    // http(s), so this regex's registryUrl group simply never matches their content.
+    //
+    // Every "\n\s*" before a field name (rather than a plain "\s*") is deliberate: three
+    // apps carry a "# Verify the current targetRevision: helm search repo ..." comment
+    // between chart: and targetRevision:, and that comment text contains the literal
+    // substring "targetRevision:" itself. A lazy [\s\S]*?targetRevision: match grabs that
+    // in-comment occurrence first (and captures "helm" - the next word in the comment - as
+    // the "version"), not the real key two lines later. Requiring an actual newline
+    // immediately before the field name forces it to match only a line that begins with
+    // that key, since RE2 (which Renovate uses) doesn't support lookaround to solve this
+    // the more obvious way. Verified against every real config.yaml in this repo.
+    {
+      customType: "regex",
+      description: "Classic HTTP Helm chart repos",
+      managerFilePatterns: ["project/code/kubernetes/apps/*/config.yaml"],
+      matchStrings: [
+        "repoURL:\\s*(?<registryUrl>https?:\\/\\/\\S+)[\\s\\S]*?\\n\\s*chart:\\s*(?<depName>\\S+)[\\s\\S]*?\\n\\s*targetRevision:\\s*(?<currentValue>\\S+)",
+      ],
+      datasourceTemplate: "helm",
+    },
+
+    // Helm chart versions for apps using an OCI chart registry (atlas-operator: ghcr.io,
+    // kueue: registry.k8s.io). Renovate's docker datasource wants the full registry+path
+    // as one packageName, not a separate registryUrl - verified against a real local
+    // dry-run extraction (both resolved to the correct packageName/version), but keep an
+    // eye on the first real PR from this rule regardless: OCI Helm chart resolution has
+    // known rough edges elsewhere in the Renovate community. Same "\n\s*" reasoning as
+    // above applies here too (kueue's config.yaml carries the same kind of comment).
+    {
+      customType: "regex",
+      description: "OCI Helm chart repos",
+      managerFilePatterns: [
+        "/^project\\/code\\/kubernetes\\/apps\\/(atlas-operator|kueue)\\/config\\.yaml$/",
+      ],
+      matchStrings: [
+        "repoURL:\\s*(?<registryHost>\\S+)[\\s\\S]*?\\n\\s*chart:\\s*(?<chartName>\\S+)[\\s\\S]*?\\n\\s*targetRevision:\\s*(?<currentValue>\\S+)",
+      ],
+      datasourceTemplate: "docker",
+      packageNameTemplate: "{{{registryHost}}}/{{{chartName}}}",
+    },
+
+    // Pinned Jenkins plugin versions in controller.additionalPlugins. Scoped to just that
+    // list (not the whole file) via matchStringsStrategy: recursive - the first matchString
+    // finds the additionalPlugins block, the second extracts each "- id:version" line
+    // within it, so it can't accidentally match unrelated "- key: value" lines elsewhere
+    // in this file (containerEnv entries, JCasC list items, etc).
+    {
+      customType: "regex",
+      description: "Jenkins plugin versions",
+      managerFilePatterns: [
+        "/^project\\/code\\/kubernetes\\/apps\\/jenkins\\/values\\.yaml$/",
+      ],
+      matchStringsStrategy: "recursive",
+      matchStrings: [
+        "additionalPlugins:[\\s\\S]*?\\n  JCasC:",
+        "- (?<depName>[a-zA-Z0-9_-]+):(?<currentValue>[\\w.-]+)",
+      ],
+      datasourceTemplate: "jenkins-plugins",
+    },
+  ],
+}

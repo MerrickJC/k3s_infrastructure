@@ -1,0 +1,45 @@
+name: Helm app render check
+
+# Lightweight companion to jenkins-jcasc-check.yml, for every OTHER app with hasHelm: true.
+# Just proves `helm template` succeeds against the pinned chart version + values.yaml - no
+# JCasC-style deep validation, because none of these apps have Jenkins' dual-source-of-truth
+# problem between chart-generated and hand-written config. Every app here has ArgoCD
+# syncPolicy.automated: {prune: true, selfHeal: true} (argocd-management/unified-automation.yaml),
+# so this is the only gate between a bad chart bump - hand-edited or Renovate-proposed - and
+# it going live with no post-merge staging step.
+
+on:
+  pull_request:
+    paths:
+      - "project/code/kubernetes/apps/**/config.yaml"
+      - "project/code/kubernetes/apps/**/values.yaml"
+      - "!project/code/kubernetes/apps/jenkins/**"
+      - "!project/code/kubernetes/apps/example/**"
+
+concurrency:
+  group: helm-app-render-check-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  helm-template:
+    name: helm template every hasHelm app
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.15.4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install pyyaml
+
+      - name: helm template every app
+        run: python .github/scripts/render_helm_apps.py project/code/kubernetes/apps
