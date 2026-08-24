@@ -1,9 +1,23 @@
 # Job DSL scripts, one file per team folder. This ConfigMap is the single source of truth for
-# these scripts (there are no separate .groovy files elsewhere to keep in sync) - persistence.
+# these scripts (there are no separate .groovy files elsewhere to keep in sync).
 # volumes/mounts in values.yaml mounts it onto the Jenkins controller at /var/jenkins_home/job-dsl,
 # and the seed job (see the `jobs:` block in values.yaml's JCasC config) runs `jobDsl` against the
 # mounted *.groovy files to (re)create the folders/jobs below. See docs/kubernetes/jenkins-jobs.md
 # for how to add a new team folder or repository.
+#
+# Keys must be valid Groovy script/class identifiers (letters, digits, underscores only, no
+# leading digit) - Job DSL compiles each mounted file as a Groovy class named after its filename
+# (minus .groovy), so a hyphen (e.g. "autonomous-systems.groovy") fails with "invalid script name"
+# even though it's a perfectly normal ConfigMap key / filename otherwise. Use underscores instead.
+#
+# Branch sources use configure{} raw XML, not the built-in branchSources { github { ... } } DSL:
+# that shorthand (javaposse.jobdsl.dsl.helpers.workflow.GitHubBranchSourceContext, bundled in
+# job-dsl-plugin itself since ~2015/v1.54) predates github-branch-source-plugin's traits system
+# entirely and only exposes 6 boolean toggles - no traits{}, no fork-PR trust control. The XML
+# below is copied verbatim from each job's original config.xml (from the old Jenkins instance),
+# with only the credentialsId normalized to this instance's real credential ID. See
+# docs/kubernetes/jenkins-jobs.md for the full explanation.
+#
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -18,51 +32,72 @@ data:
     multibranchPipelineJob('Autonomous Systems/mms_ws2') {
         description('Pipeline 2')
 
-        branchSources {
-            github {
-                id('1')
-                scanCredentialsId('jenkins-api-key-for-github')
-                repoOwner('monashmotorsport')
-                repository('mms_ws2')
-                traits {
-                    // strategyId 3 = discover all branches (not just ones without an open PR)
-                    gitHubBranchDiscovery {
-                        strategyId(3)
-                    }
-                    gitHubPullRequestDiscovery {
-                        strategyId(2)
-                    }
-                    gitHubForkDiscovery {
-                        strategyId(2)
-                        trust {
-                            gitHubTrustPermissions()
-                        }
-                    }
-                }
-            }
-        }
+        configure { Node project ->
+            project.remove(project / 'sources')
+            project << new XmlParser().parseText('''
+                <sources class="jenkins.branch.MultiBranchProject$BranchSourceList">
+                  <data>
+                    <jenkins.branch.BranchSource>
+                      <source class="org.jenkinsci.plugins.github_branch_source.GitHubSCMSource">
+                        <id>1</id>
+                        <apiUri>https://api.github.com</apiUri>
+                        <credentialsId>jenkins-api-key-for-github</credentialsId>
+                        <repoOwner>monashmotorsport</repoOwner>
+                        <repository>mms_ws2</repository>
+                        <repositoryUrl>https://github.com/monashmotorsport/mms_ws2.git</repositoryUrl>
+                        <traits>
+                          <org.jenkinsci.plugins.github__branch__source.BranchDiscoveryTrait>
+                            <strategyId>3</strategyId>
+                          </org.jenkinsci.plugins.github__branch__source.BranchDiscoveryTrait>
+                          <org.jenkinsci.plugins.github__branch__source.OriginPullRequestDiscoveryTrait>
+                            <strategyId>2</strategyId>
+                          </org.jenkinsci.plugins.github__branch__source.OriginPullRequestDiscoveryTrait>
+                          <org.jenkinsci.plugins.github__branch__source.ForkPullRequestDiscoveryTrait>
+                            <strategyId>2</strategyId>
+                            <trust class="org.jenkinsci.plugins.github_branch_source.ForkPullRequestDiscoveryTrait$TrustPermission"/>
+                          </org.jenkinsci.plugins.github__branch__source.ForkPullRequestDiscoveryTrait>
+                        </traits>
+                      </source>
+                      <strategy class="jenkins.branch.DefaultBranchPropertyStrategy">
+                        <properties class="java.util.Arrays$ArrayList">
+                          <a class="jenkins.branch.BranchProperty-array">
+                            <jenkins.branch.NoTriggerBranchProperty>
+                              <triggeredBranchesRegex>^(master|PR-\\d+)$</triggeredBranchesRegex>
+                              <strategy>INDEXING</strategy>
+                            </jenkins.branch.NoTriggerBranchProperty>
+                          </a>
+                        </properties>
+                      </strategy>
+                    </jenkins.branch.BranchSource>
+                  </data>
+                </sources>
+                ''')
 
-        factory {
-            workflowBranchProjectFactory {
-                scriptPath('Jenkinsfile')
-            }
-        }
+            project.remove(project / 'factory')
+            project << new XmlParser().parseText('''
+                <factory class="org.jenkinsci.plugins.workflow.multibranch.WorkflowBranchProjectFactory">
+                  <scriptPath>Jenkinsfile</scriptPath>
+                </factory>
+                ''')
 
-        // Re-scan every 4 hours for new/removed branches and PRs.
-        triggers {
-            periodicFolderTrigger {
-                interval('4h')
-            }
-        }
-
-        // master and PR branches are built by their own event triggers elsewhere (PR webhook /
-        // push), not by this periodic branch-indexing scan - only feature branches should build
-        // on indexing.
-        properties {
-            suppressAutomaticTriggering {
-                triggeredBranchesRegex('^(master|PR-\\d+)$')
-                strategy('INDEXING')
-            }
+            // Re-scan every 24 hours for new/removed branches and PRs (master/PR branches build via
+            // their own event triggers elsewhere, not this scan - see the NoTriggerBranchProperty
+            // above).
+            //
+            // spec and interval must agree: Jenkins normally derives spec FROM interval
+            // (toCrontab(interval)) when set via the UI, and PeriodicFolderTrigger.run() gates
+            // actual rescans on interval (ms) elapsed, not on spec - spec only controls how often
+            // Jenkins checks whether it's time to run. A mismatched pair (e.g. a 4-hour spec next
+            // to a 24-hour interval) silently rescans on the interval's cadence, not the spec's.
+            project.remove(project / 'triggers')
+            project << new XmlParser().parseText('''
+                <triggers>
+                  <com.cloudbees.hudson.plugins.folder.computed.PeriodicFolderTrigger>
+                    <spec>H H * * *</spec>
+                    <interval>86400000</interval>
+                  </com.cloudbees.hudson.plugins.folder.computed.PeriodicFolderTrigger>
+                </triggers>
+                ''')
         }
     }
   dynamics.groovy: |
@@ -73,35 +108,46 @@ data:
     multibranchPipelineJob('Dynamics/m26_m150_firmware') {
         description('This repository contains all the MoTeC software relevant to M26')
 
-        branchSources {
-            github {
-                id('1')
-                scanCredentialsId('jenkins-api-key-for-github')
-                repoOwner('monashmotorsport')
-                repository('m26_m150_firmware')
-                traits {
-                    // strategyId 1 = exclude branches that are also filed as PRs (avoids
-                    // building the same commit twice, once as a branch and once as a PR)
-                    gitHubBranchDiscovery {
-                        strategyId(1)
-                    }
-                    gitHubPullRequestDiscovery {
-                        strategyId(2)
-                    }
-                    gitHubForkDiscovery {
-                        strategyId(2)
-                        trust {
-                            gitHubTrustPermissions()
-                        }
-                    }
-                }
-            }
-        }
+        configure { Node project ->
+            project.remove(project / 'sources')
+            project << new XmlParser().parseText('''
+                <sources class="jenkins.branch.MultiBranchProject$BranchSourceList">
+                  <data>
+                    <jenkins.branch.BranchSource>
+                      <source class="org.jenkinsci.plugins.github_branch_source.GitHubSCMSource">
+                        <id>1</id>
+                        <apiUri>https://api.github.com</apiUri>
+                        <credentialsId>jenkins-api-key-for-github</credentialsId>
+                        <repoOwner>monashmotorsport</repoOwner>
+                        <repository>m26_m150_firmware</repository>
+                        <repositoryUrl>https://github.com/monashmotorsport/m26_m150_firmware.git</repositoryUrl>
+                        <traits>
+                          <org.jenkinsci.plugins.github__branch__source.BranchDiscoveryTrait>
+                            <strategyId>1</strategyId>
+                          </org.jenkinsci.plugins.github__branch__source.BranchDiscoveryTrait>
+                          <org.jenkinsci.plugins.github__branch__source.OriginPullRequestDiscoveryTrait>
+                            <strategyId>2</strategyId>
+                          </org.jenkinsci.plugins.github__branch__source.OriginPullRequestDiscoveryTrait>
+                          <org.jenkinsci.plugins.github__branch__source.ForkPullRequestDiscoveryTrait>
+                            <strategyId>2</strategyId>
+                            <trust class="org.jenkinsci.plugins.github_branch_source.ForkPullRequestDiscoveryTrait$TrustPermission"/>
+                          </org.jenkinsci.plugins.github__branch__source.ForkPullRequestDiscoveryTrait>
+                        </traits>
+                      </source>
+                      <strategy class="jenkins.branch.DefaultBranchPropertyStrategy">
+                        <properties class="empty-list"/>
+                      </strategy>
+                    </jenkins.branch.BranchSource>
+                  </data>
+                </sources>
+                ''')
 
-        factory {
-            workflowBranchProjectFactory {
-                scriptPath('Jenkinsfile')
-            }
+            project.remove(project / 'factory')
+            project << new XmlParser().parseText('''
+                <factory class="org.jenkinsci.plugins.workflow.multibranch.WorkflowBranchProjectFactory">
+                  <scriptPath>Jenkinsfile</scriptPath>
+                </factory>
+                ''')
         }
     }
   electrical_systems.groovy: |
@@ -112,34 +158,45 @@ data:
     multibranchPipelineJob('Electrical Systems (ESYS)/2025-2026-BMS-Firmware') {
         description("This repository is for ESYS' BMS software for their Battery Management System.")
 
-        branchSources {
-            github {
-                id('1')
-                scanCredentialsId('jenkins-api-key-for-github')
-                repoOwner('monashmotorsport')
-                repository('2025-2026-BMS-Firmware')
-                traits {
-                    // strategyId 1 = exclude branches that are also filed as PRs (avoids
-                    // building the same commit twice, once as a branch and once as a PR)
-                    gitHubBranchDiscovery {
-                        strategyId(1)
-                    }
-                    gitHubPullRequestDiscovery {
-                        strategyId(2)
-                    }
-                    gitHubForkDiscovery {
-                        strategyId(2)
-                        trust {
-                            gitHubTrustPermissions()
-                        }
-                    }
-                }
-            }
-        }
+        configure { Node project ->
+            project.remove(project / 'sources')
+            project << new XmlParser().parseText('''
+                <sources class="jenkins.branch.MultiBranchProject$BranchSourceList">
+                  <data>
+                    <jenkins.branch.BranchSource>
+                      <source class="org.jenkinsci.plugins.github_branch_source.GitHubSCMSource">
+                        <id>1</id>
+                        <apiUri>https://api.github.com</apiUri>
+                        <credentialsId>jenkins-api-key-for-github</credentialsId>
+                        <repoOwner>monashmotorsport</repoOwner>
+                        <repository>2025-2026-BMS-Firmware</repository>
+                        <repositoryUrl>https://github.com/monashmotorsport/2025-2026-BMS-Firmware.git</repositoryUrl>
+                        <traits>
+                          <org.jenkinsci.plugins.github__branch__source.BranchDiscoveryTrait>
+                            <strategyId>1</strategyId>
+                          </org.jenkinsci.plugins.github__branch__source.BranchDiscoveryTrait>
+                          <org.jenkinsci.plugins.github__branch__source.OriginPullRequestDiscoveryTrait>
+                            <strategyId>2</strategyId>
+                          </org.jenkinsci.plugins.github__branch__source.OriginPullRequestDiscoveryTrait>
+                          <org.jenkinsci.plugins.github__branch__source.ForkPullRequestDiscoveryTrait>
+                            <strategyId>2</strategyId>
+                            <trust class="org.jenkinsci.plugins.github_branch_source.ForkPullRequestDiscoveryTrait$TrustPermission"/>
+                          </org.jenkinsci.plugins.github__branch__source.ForkPullRequestDiscoveryTrait>
+                        </traits>
+                      </source>
+                      <strategy class="jenkins.branch.DefaultBranchPropertyStrategy">
+                        <properties class="empty-list"/>
+                      </strategy>
+                    </jenkins.branch.BranchSource>
+                  </data>
+                </sources>
+                ''')
 
-        factory {
-            workflowBranchProjectFactory {
-                scriptPath('Jenkinsfile')
-            }
+            project.remove(project / 'factory')
+            project << new XmlParser().parseText('''
+                <factory class="org.jenkinsci.plugins.workflow.multibranch.WorkflowBranchProjectFactory">
+                  <scriptPath>Jenkinsfile</scriptPath>
+                </factory>
+                ''')
         }
     }
