@@ -8,3 +8,6 @@ helm:
   repoURL: registry.k8s.io/kueue/charts
   chart: kueue
   targetRevision: 0.19.1
+
+syncOptions:
+  - ServerSideApply=true
