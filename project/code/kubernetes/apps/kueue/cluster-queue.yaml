@@ -35,8 +35,9 @@ spec:
               nominalQuota: "32"
             - name: memory
               nominalQuota: 64Gi
-  admissionChecks:
-    - name: experiment-burst-provisioning
+  admissionChecksStrategy:
+    admissionChecks:
+      - name: experiment-burst-provisioning
 ---
 # Wires Kueue to Cluster Autoscaler's ProvisioningRequest API
 apiVersion: kueue.x-k8s.io/v1beta2
