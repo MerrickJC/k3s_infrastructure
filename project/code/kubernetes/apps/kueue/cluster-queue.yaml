@@ -3,7 +3,7 @@
 
 # Matches nodes in the experiment-burst pool. `nodeLabels` must match whatever label the burst
 # MachineDeployment's nodes actually carry (apps/cluster-api)
-apiVersion: kueue.x-k8s.io/v1beta1
+apiVersion: kueue.x-k8s.io/v1beta2
 kind: ResourceFlavor
 metadata:
   name: experiment-burst
@@ -18,7 +18,7 @@ spec:
 ---
 # Handles the flapping scenario: Kueue only admits a workload once real capacity is confirmed
 # (via the AdmissionCheck below), rather than every pending pod individually triggering the autoscaler.
-apiVersion: kueue.x-k8s.io/v1beta1
+apiVersion: kueue.x-k8s.io/v1beta2
 kind: ClusterQueue
 metadata:
   name: experiment-execution
@@ -36,10 +36,10 @@ spec:
             - name: memory
               nominalQuota: 64Gi
   admissionChecks:
-    - experiment-burst-provisioning
+    - name: experiment-burst-provisioning
 ---
 # Wires Kueue to Cluster Autoscaler's ProvisioningRequest API
-apiVersion: kueue.x-k8s.io/v1beta1
+apiVersion: kueue.x-k8s.io/v1beta2
 kind: AdmissionCheck
 metadata:
   name: experiment-burst-provisioning
@@ -50,7 +50,7 @@ spec:
     kind: ProvisioningRequestConfig
     name: experiment-burst-provisioning
 ---
-apiVersion: kueue.x-k8s.io/v1beta1
+apiVersion: kueue.x-k8s.io/v1beta2
 kind: ProvisioningRequestConfig
 metadata:
   name: experiment-burst-provisioning
