@@ -1,0 +1,87 @@
+name: Jenkins plugin security check
+
+# Jenkins plugin security advisories are a category Renovate structurally cannot cover:
+# they aren't in the OSV/GHSA database osvVulnerabilityAlerts checks and many carry "no 
+# fix available" status meaning no newer version for any version-bump tool like Renovate
+# to propose. Jenkins' Plugin Manager UI surfaces these, but that's only visible to someone
+# who happens to log into Jenkins and look.
+#
+# This workflow checks the same feed Jenkins itself reads
+# (https://updates.jenkins.io/current/update-center.actual.json) against
+# apps/jenkins/values.yaml's pinned controller.additionalPlugins list, and keeps a single
+# persistent GitHub issue up to date with any current findings - mirroring how the
+# Dependency Dashboard issue works for Renovate, so this is visible from GitHub alone,
+# with no cluster or Jenkins access needed. Uses .github/scripts/check_jenkins_plugin_security.py
+# for the actual check
+on:
+  schedule:
+    - cron: "30 21 * * 0" # Sunday 21:30 UTC = Monday 07:30 Melbourne (AEST, UTC+10) - 30
+    # minutes after renovate.yml's scheduled run
+  workflow_dispatch: {}
+
+permissions:
+  issues: write
+
+env:
+  JENKINS_VALUES: project/code/kubernetes/apps/jenkins/values.yaml
+  ISSUE_TITLE: "Jenkins plugin security warnings"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install pyyaml
+
+      - name: Check pinned plugins against the Jenkins Update Center
+        id: check
+        run: |
+          set -euo pipefail
+          python .github/scripts/check_jenkins_plugin_security.py "$JENKINS_VALUES" > report.md
+          if [ -s report.md ]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Find existing tracking issue
+        id: existing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # Filtered client-side (not via `gh issue list --search`) to avoid GitHub's
+          # search-index lag causing a duplicate issue to be created right after this
+          # workflow creates or closes one.
+          number=$(gh issue list --state all --limit 100 --json number,title \
+            --jq ".[] | select(.title == \"$ISSUE_TITLE\") | .number" | head -n1)
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+
+      - name: Create or update issue
+        if: steps.check.outputs.found == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [ -n "${{ steps.existing.outputs.number }}" ]; then
+            gh issue edit "${{ steps.existing.outputs.number }}" --body-file report.md
+            gh issue reopen "${{ steps.existing.outputs.number }}" 2>/dev/null || true
+          else
+            gh issue create --title "$ISSUE_TITLE" --body-file report.md
+          fi
+
+      - name: Close issue if nothing is currently affected
+        if: steps.check.outputs.found == 'false' && steps.existing.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh issue comment "${{ steps.existing.outputs.number }}" \
+            --body "No pinned Jenkins plugin is currently affected by a published security advisory, per the [Jenkins Update Center](https://updates.jenkins.io/current/update-center.actual.json) feed - closing."
+          gh issue close "${{ steps.existing.outputs.number }}"

@@ -9,6 +9,18 @@
   automerge: false,
   dependencyDashboard: true,
 
+  // Checks the OSV.dev database directly (no GitHub token permission needed, unlike the
+  // older GitHub-native vulnerabilityAlerts option which depends on Dependabot alerts
+  // access) and opens out-of-schedule PRs for known-vulnerable versions. Realistic
+  // coverage in this repo: strong for .github/workflows/* (github-actions is a
+  // well-tracked OSV ecosystem), essentially none for the Helm/Jenkins-plugin/ArgoCD
+  // customManagers below - OSV doesn't carry advisories for those datasources. Jenkins
+  // plugin security warnings (a real, distinct category - see the Jenkins Update
+  // Center's own "warnings" feed) are handled separately by
+  // jenkins-plugin-security-check.yml, since they're often "no fix available" cases that
+  // no version-bump tool (this included) can act on by opening a PR.
+  osvVulnerabilityAlerts: true,
+
   // apps/example is a permanently-excluded template folder (per CLAUDE.md), not a real
   // app - its config.yaml has literal placeholder text like "repoURL: https://<url>" that
   // would otherwise trip a harmless-but-noisy "Invalid regex manager registryUrl" warning.
@@ -92,6 +104,16 @@
     // finds the additionalPlugins block, the second extracts each "- id:version" line
     // within it, so it can't accidentally match unrelated "- key: value" lines elsewhere
     // in this file (containerEnv entries, JCasC list items, etc).
+    //
+    // versioning: "loose" is required, not cosmetic: the jenkins-plugins datasource
+    // declares no defaultVersioning of its own, so without this Renovate falls
+    // back to its global default of strict semver which CANNOT parse Jenkins plugin
+    // version strings like "1421.v99cb_b_2577709" (not MAJOR.MINOR.PATCH) at all. The
+    // practical effect verified against a real run: Renovate detects all 15 plugins fine,
+    // but silently finds zero updates for any of them, even when one genuinely exists because
+    // it can't compare unparseable versions, not because none were available. "loose"
+    // versioning correctly orders these by leading numeric prefix without needing to
+    // understand the ".vHASH" suffix at all
     {
       customType: "regex",
       description: "Jenkins plugin versions",
@@ -104,6 +126,7 @@
         "- (?<depName>[a-zA-Z0-9_-]+):(?<currentValue>[\\w.-]+)",
       ],
       datasourceTemplate: "jenkins-plugins",
+      versioning: "loose",
     },
 
     // ArgoCD's own version, pinned via a raw GitHub URL (not a Helm chart or a k8s manifest

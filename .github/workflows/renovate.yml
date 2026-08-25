@@ -40,10 +40,7 @@ name: Renovate
 
 on:
   schedule:
-    - cron: "0 4 * * 1" # Monday 04:00 UTC - how often this workflow itself wakes up to
-    # check for updates. renovate.json5's own "schedule:weekly" preset separately governs
-    # when Renovate is willing to actually open PRs, so this just needs to be at least as
-    # frequent.
+    - cron: "0 21 * * 0" # runs weekly on Sunday 21:00 UTC = Monday 07:00 Melbourne (AEST, UTC+10)
   workflow_dispatch:
     inputs:
       dryRun:
