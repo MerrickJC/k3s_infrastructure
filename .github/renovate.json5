@@ -33,6 +33,13 @@
       labels: ["needs-manual-review"],
       dependencyDashboardApproval: true,
     },
+    {
+      description: "Extra caution: ArgoCD self-manages this entire cluster (syncPolicy.automated selfHeal/prune on every app) - a bad major bump here has the highest blast radius of anything in this repo, potentially breaking every other app's deployment at once.",
+      matchFileNames: ["project/code/kubernetes/argocd-management/**"],
+      matchUpdateTypes: ["major"],
+      labels: ["needs-manual-review"],
+      dependencyDashboardApproval: true,
+    },
   ],
 
   customManagers: [
@@ -97,6 +104,28 @@
         "- (?<depName>[a-zA-Z0-9_-]+):(?<currentValue>[\\w.-]+)",
       ],
       datasourceTemplate: "jenkins-plugins",
+    },
+
+    // ArgoCD's own version, pinned via a raw GitHub URL (not a Helm chart or a k8s manifest
+    // image tag) in argocd-management/kustomization.yaml's `resources:` list. Renovate's
+    // built-in kustomize manager does NOT cover this: its extractor
+    // (lib/modules/manager/kustomize/extract.ts) only recognizes the git remote-base query
+    // syntax (?ref=/?version=, optionally git::-prefixed), not a plain raw.githubusercontent.com
+    // URL with the version embedded in the path - verified directly against Renovate's source.
+    // Without this custom manager, ArgoCD's version - arguably the single most
+    // consequential pin in this repo, since it self-manages every other app - would never
+    // be tracked at all.
+    {
+      customType: "regex",
+      description: "ArgoCD's own version (raw install manifest URL)",
+      managerFilePatterns: [
+        "/^project\\/code\\/kubernetes\\/argocd-management\\/kustomization\\.yaml$/",
+      ],
+      matchStrings: [
+        "raw\\.githubusercontent\\.com\\/(?<depName>[\\w-]+\\/[\\w-]+)\\/(?<currentValue>v?[0-9]+\\.[0-9]+\\.[0-9]+)\\/",
+      ],
+      datasourceTemplate: "github-releases",
+      packageNameTemplate: "{{{depName}}}",
     },
   ],
 }
