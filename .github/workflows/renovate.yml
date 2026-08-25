@@ -21,7 +21,9 @@ name: Renovate
 #   - Every run uploads a debug-level log as a workflow artifact (see the last step below) -
 #     this is the authoritative record of exactly which files each manager matched, which
 #     files were considered and rejected (and why), and what dependencies were extracted
-#     from each. Download it from the run's Summary page under "Artifacts".
+#     from each. Download it from the run's Summary page under "Artifacts". The log is
+#     written to /tmp since Renovate inside a nested Docker container and only /tmp is 
+#     bind-mounted back to the runner by default.
 #   - The Dependency Dashboard issue (dependencyDashboard: true in renovate.json5) is the
 #     steady-state view of what Renovate currently knows about and is proposing/withholding -
 #     good for "what updates exist", not for "what files did it look at".
@@ -72,7 +74,7 @@ jobs:
         uses: renovatebot/github-action@v46.2.2
         env:
           LOG_LEVEL: debug
-          RENOVATE_LOG_FILE: ${{ github.workspace }}/renovate-debug.log
+          RENOVATE_LOG_FILE: /tmp/renovate-debug.log
           RENOVATE_LOG_FILE_LEVEL: debug
         with:
           configurationFile: .github/renovate.json5
@@ -83,5 +85,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: renovate-debug-log
-          path: renovate-debug.log
+          path: /tmp/renovate-debug.log
           retention-days: 30
