@@ -1,0 +1,3 @@
+sidecars:
+  nodeDriverRegistrarImage:
+    tag: v2.17.0
