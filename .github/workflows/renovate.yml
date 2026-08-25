@@ -16,6 +16,19 @@ name: Renovate
 # the App (App settings > Private keys > Generate a private key), added under
 # Settings > Secrets and variables > Actions. The App's Client ID (Iv23lizM7Lkb4am430sm,
 # below) is a public identifier, not a secret.
+#
+# Visibility into what Renovate did/didn't scan:
+#   - Every run uploads a debug-level log as a workflow artifact (see the last step below) -
+#     this is the authoritative record of exactly which files each manager matched, which
+#     files were considered and rejected (and why), and what dependencies were extracted
+#     from each. Download it from the run's Summary page under "Artifacts".
+#   - The Dependency Dashboard issue (dependencyDashboard: true in renovate.json5) is the
+#     steady-state view of what Renovate currently knows about and is proposing/withholding -
+#     good for "what updates exist", not for "what files did it look at".
+#   - To audit config changes (e.g. after adding a new customManager) without opening or
+#     touching any PRs/branches, manually dispatch this workflow with "Extract only" checked -
+#     this runs Renovate in dry-run mode, so the debug log artifact reflects the new config
+#     with zero side effects on the repo.
 
 on:
   schedule:
@@ -23,7 +36,12 @@ on:
     # check for updates. renovate.json5's own "schedule:weekly" preset separately governs
     # when Renovate is willing to actually open PRs, so this just needs to be at least as
     # frequent.
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      dryRun:
+        description: "Extract only - scan and log what would happen, but open/update nothing (for auditing scan coverage)"
+        type: boolean
+        default: false
 
 concurrency:
   group: renovate
@@ -46,8 +64,24 @@ jobs:
           app-id: Iv23lizM7Lkb4am430sm
           private-key: ${{ secrets.RENOVATE_APP_PRIVATE_KEY }}
 
+      - name: Enable dry-run (extract-only) mode
+        if: ${{ inputs.dryRun }}
+        run: echo "RENOVATE_DRY_RUN=extract" >> "$GITHUB_ENV"
+
       - name: Self-hosted Renovate
         uses: renovatebot/github-action@v46.2.2
+        env:
+          LOG_LEVEL: debug
+          RENOVATE_LOG_FILE: ${{ github.workspace }}/renovate-debug.log
+          RENOVATE_LOG_FILE_LEVEL: debug
         with:
           configurationFile: .github/renovate.json5
           token: "${{ steps.app-token.outputs.token }}"
+
+      - name: Upload scan log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: renovate-debug-log
+          path: renovate-debug.log
+          retention-days: 30
