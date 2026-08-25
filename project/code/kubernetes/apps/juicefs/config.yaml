@@ -7,4 +7,4 @@ hasManifests: false
 helm:
   repoURL: https://juicedata.github.io/charts/
   chart: juicefs-csi-driver
-  targetRevision: 0.32.1
+  targetRevision: 0.32.4
