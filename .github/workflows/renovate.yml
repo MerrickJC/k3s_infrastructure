@@ -1,17 +1,21 @@
 name: Renovate
 
-# Self-hosted (no third-party GitHub App installed) - runs the actual Renovate engine
-# against .github/renovate.json5 on a schedule, or on demand via workflow_dispatch.
+# Runs the actual Renovate engine against .github/renovate.json5 on a schedule, or on
+# demand via workflow_dispatch, authenticated as the MMS Renovate GitHub App (installed on
+# this repo only) rather than a personal PAT - so it isn't tied to any one person's account.
 #
-# Requires a repo secret RENOVATE_TOKEN: a fine-grained PAT scoped to just this repo, with
-# Contents (read/write), Pull requests (read/write), and Issues (read/write - Renovate uses
-# an issue for the Dependency Dashboard) permissions. This CANNOT be the default
-# secrets.GITHUB_TOKEN: GitHub deliberately blocks PRs opened with the default token from
-# triggering other pull_request-triggered workflows in the same repo (anti-recursion
-# safeguard), which would silently stop jenkins-jcasc-check.yml and
-# helm-app-render-check.yml from ever running on Renovate's own PRs - defeating the reason
-# this exists. Create the PAT under your own account, then add it as a repo secret named
-# RENOVATE_TOKEN under Settings > Secrets and variables > Actions.
+# Auth: actions/create-github-app-token mints a short-lived (~1hr) installation token at the
+# start of every run from the App's private key, which is then fed into
+# renovatebot/github-action's `token` input. This is deliberately NOT the default
+# secrets.GITHUB_TOKEN: GitHub blocks PRs opened with the default token from triggering
+# other pull_request-triggered workflows in the same repo (anti-recursion safeguard), which
+# would silently stop jenkins-jcasc-check.yml and helm-app-render-check.yml from ever
+# running on Renovate's own PRs - defeating the reason this exists.
+#
+# Requires one repo secret: RENOVATE_APP_PRIVATE_KEY - the .pem private key generated for
+# the App (App settings > Private keys > Generate a private key), added under
+# Settings > Secrets and variables > Actions. The App's Client ID (Iv23lizM7Lkb4am430sm,
+# below) is a public identifier, not a secret.
 
 on:
   schedule:
@@ -35,8 +39,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Mint short-lived GitHub App installation token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: Iv23lizM7Lkb4am430sm
+          private-key: ${{ secrets.RENOVATE_APP_PRIVATE_KEY }}
+
       - name: Self-hosted Renovate
         uses: renovatebot/github-action@v46.2.2
         with:
           configurationFile: .github/renovate.json5
-          token: "${{ secrets.RENOVATE_TOKEN }}"
+          token: "${{ steps.app-token.outputs.token }}"
