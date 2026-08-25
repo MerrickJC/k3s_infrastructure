@@ -17,6 +17,12 @@ name: Renovate
 # Settings > Secrets and variables > Actions. The App's Client ID (Iv23lizM7Lkb4am430sm,
 # below) is a public identifier, not a secret.
 #
+# RENOVATE_REPOSITORIES is required: unlike the hosted github.com/apps/renovate bot (which
+# auto-discovers every repo it's installed on), self-hosted Renovate has no default target -
+# without this it silently logs "No repositories found" and exits having scanned nothing at
+# all, with no error. Verified via a real run's debug log that this was happening even after
+# auth was fixed.
+#
 # Visibility into what Renovate did/didn't scan:
 #   - Every run uploads a debug-level log as a workflow artifact (see the last step below) -
 #     this is the authoritative record of exactly which files each manager matched, which
@@ -76,6 +82,7 @@ jobs:
           LOG_LEVEL: debug
           RENOVATE_LOG_FILE: /tmp/renovate-debug.log
           RENOVATE_LOG_FILE_LEVEL: debug
+          RENOVATE_REPOSITORIES: ${{ github.repository }}
         with:
           configurationFile: .github/renovate.json5
           token: "${{ steps.app-token.outputs.token }}"
