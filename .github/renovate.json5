@@ -79,21 +79,37 @@
       datasourceTemplate: "helm",
     },
 
-    // Helm chart versions for apps using an OCI chart registry (atlas-operator: ghcr.io,
-    // kueue: registry.k8s.io). Renovate's docker datasource wants the full registry+path
-    // as one packageName, not a separate registryUrl - verified against a real local
-    // dry-run extraction (both resolved to the correct packageName/version), but keep an
-    // eye on the first real PR from this rule regardless: OCI Helm chart resolution has
-    // known rough edges elsewhere in the Renovate community. Same "\n\s*" reasoning as
-    // above applies here too (kueue's config.yaml carries the same kind of comment).
+    // Helm chart versions for apps using an OCI chart registry. Renovate's
+    // docker datasource wants the full registry+path as one packageName, not a separate
+    // registryUrl - verified against a real local dry-run extraction (both resolved to the
+    // correct packageName/version), but keep an eye on the first real PR from this rule
+    // regardless: OCI Helm chart resolution has known rough edges elsewhere in the
+    // Renovate community. Same "\n\s*" reasoning as the HTTP rule above applies here too
+    // (kueue's config.yaml carries the same kind of comment).
+    //
+    // managerFilePatterns is the same apps/*/config.yaml glob as the classic-HTTP rule
+    // above - this is deliberate, not copy-paste: it means a new OCI-based app needs zero
+    // Renovate config changes to be picked up, mirroring how the ArgoCD ApplicationSet
+    // itself auto-discovers new apps/<name>/ folders. This used to be a hardcoded filename
+    // allowlist that every future OCI app would have needed to update. Broadening it safely requires the
+    // registryHost capture to properly self-exclude classic-HTTP repos - just widening
+    // the old glob without this would have caused every HTTP app to *also* match here,
+    // producing a second garbled "docker" dependency (packageName "https/<chart>") for
+    // each. The exclusion works by requiring registryHost ([^\s:]+, i.e. no colon) to be
+    // followed immediately by end-of-line: for "https://host/...", the capture stops at
+    // "https" (colon-excluded), then the literal newline requirement fails since "://..."
+    // immediately follows on the same line - so the whole match fails for HTTP repos, the
+    // same way the HTTP rule's `https?://` requirement fails to match OCI repos. RE2 (no
+    // lookaround) meant this had to be a real end-of-line anchor via a consumed \n, not a
+    // lookahead - verified against every real config.yaml in this repo (2 OCI apps match
+    // correctly with the right registryHost, all classic-HTTP apps correctly produce
+    // no match at all).
     {
       customType: "regex",
       description: "OCI Helm chart repos",
-      managerFilePatterns: [
-        "/^project\\/code\\/kubernetes\\/apps\\/(atlas-operator|kueue)\\/config\\.yaml$/",
-      ],
+      managerFilePatterns: ["project/code/kubernetes/apps/*/config.yaml"],
       matchStrings: [
-        "repoURL:\\s*(?<registryHost>\\S+)[\\s\\S]*?\\n\\s*chart:\\s*(?<chartName>\\S+)[\\s\\S]*?\\n\\s*targetRevision:\\s*(?<currentValue>\\S+)",
+        "repoURL:\\s*(?<registryHost>[^\\s:]+)[ \\t]*\\n\\s*chart:\\s*(?<chartName>\\S+)[\\s\\S]*?\\n\\s*targetRevision:\\s*(?<currentValue>\\S+)",
       ],
       datasourceTemplate: "docker",
       packageNameTemplate: "{{{registryHost}}}/{{{chartName}}}",
