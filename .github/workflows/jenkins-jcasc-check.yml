@@ -96,7 +96,13 @@ jobs:
       - name: Extract plugin list and JCasC config
         run: |
           set -euo pipefail
-          mkdir -p work/casc_configs
+          # work/plugins is created here too, not left for Docker to auto-create via the
+          # bind mount in the "Install plugins" step below - an auto-created bind-mount
+          # source directory is owned by the Docker daemon's user (root on this runner),
+          # which the jenkins/jenkins image's non-root "jenkins" container user then can't
+          # write into (AccessDeniedException on Files.move when jenkins-plugin-cli tries
+          # to place a downloaded .jpi there).
+          mkdir -p work/casc_configs work/plugins
           python .github/scripts/extract_jenkins_assets.py rendered.yaml work/
           chmod -R 777 work
 
