@@ -121,7 +121,7 @@
     // within it, so it can't accidentally match unrelated "- key: value" lines elsewhere
     // in this file (containerEnv entries, JCasC list items, etc).
     //
-    // versioning: "loose" is required, not cosmetic: the jenkins-plugins datasource
+    // versioningTemplate: "loose" is required, not cosmetic: the jenkins-plugins datasource
     // declares no defaultVersioning of its own, so without this Renovate falls
     // back to its global default of strict semver which CANNOT parse Jenkins plugin
     // version strings like "1421.v99cb_b_2577709" (not MAJOR.MINOR.PATCH) at all. The
@@ -142,7 +142,7 @@
         "- (?<depName>[a-zA-Z0-9_-]+):(?<currentValue>[\\w.-]+)",
       ],
       datasourceTemplate: "jenkins-plugins",
-      versioning: "loose",
+      versioningTemplate: "loose",
     },
 
     // ArgoCD's own version, pinned via a raw GitHub URL (not a Helm chart or a k8s manifest
