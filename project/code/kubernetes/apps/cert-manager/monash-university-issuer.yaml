@@ -1,0 +1,28 @@
+# ## This resource will need to be updated with appropriate values once more information is
+# ## available about the certificate authority configuration
+
+# apiVersion: cert-manager.io/v1
+# kind: ClusterIssuer
+# metadata:
+#   name: external-ca
+# spec:
+#   acme:
+#     # PLACEHOLDER: ACME directory URL for the external certificate authority
+#     server: https://acme.example-ca.com/directory
+#     # PLACEHOLDER: account email for the external CA
+#     email: email@example.com
+#     privateKeySecretRef:
+#       name: external-ca-account-key
+#     # Most non-Let's-Encrypt ACME CAs (e.g. ZeroSSL, Google Trust Services, SSL.com)
+#     # require External Account Binding to link the ACME account to a CA account.
+#     # Remove this block if the CA does not require EAB.
+#     externalAccountBinding:
+#       keyID: PLACEHOLDER-EAB-KEY-ID
+#       keySecretRef:
+#         name: external-ca-eab-key
+#         key: hmacKey
+#       keyAlgorithm: HS256
+#     solvers:
+#       - http01:
+#           ingress:
+#             ingressClassName: traefik
