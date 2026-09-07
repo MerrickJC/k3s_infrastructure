@@ -34,7 +34,7 @@ controller:
     # unclassified.timestamper
     - timestamper:1.30
     # unclassified.junitTestResultStorage
-    - junit:1421.v99cb_b_2577709
+    - junit:1425.v9c7318dca_96d
     # unclassified.googlechatnotification (used by the Pull Request Status webhook credential)
     - google-chat-notification:166.ve6b_de280f2e8
     # unclassified.pipeline-model-docker
