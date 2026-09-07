@@ -74,7 +74,7 @@ jobs:
         run: echo "RENOVATE_DRY_RUN=extract" >> "$GITHUB_ENV"
 
       - name: Self-hosted Renovate
-        uses: renovatebot/github-action@v46.2.2
+        uses: renovatebot/github-action@v46.2.6
         env:
           LOG_LEVEL: debug
           RENOVATE_LOG_FILE: /tmp/renovate-debug.log
