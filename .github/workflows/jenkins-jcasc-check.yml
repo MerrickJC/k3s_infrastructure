@@ -59,7 +59,7 @@ jobs:
         run: python .github/scripts/check_jcasc_conflicts.py rendered.yaml
 
       - if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rendered-jenkins-manifest
           path: rendered.yaml
@@ -166,7 +166,7 @@ jobs:
         run: docker logs jcasc-check > jenkins-boot.log 2>&1 || true
 
       - if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: jenkins-boot-log
           path: jenkins-boot.log
