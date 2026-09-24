@@ -9,6 +9,11 @@ helm:
   chart: kube-prometheus-stack
   targetRevision: 91.5.1
 
+# The chart's CRDs exceed the client-side "last-applied-configuration"
+# annotation size limit, so this Application syncs via server-side apply
+syncOptions:
+  - ServerSideApply=true
+
 # Protects Prometheus TSDB, Grafana's own DB, and Alertmanager state from
 # being wiped by an ArgoCD prune (matches apps/seaweedfs, apps/postgresql).
 preventDeletion: true
