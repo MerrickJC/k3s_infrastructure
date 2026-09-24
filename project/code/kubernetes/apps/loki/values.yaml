@@ -1,0 +1,44 @@
+fullnameOverride: loki
+
+deploymentMode: Monolithic
+
+singleBinary:
+  replicas: 1
+  persistence:
+    enabled: true
+    size: 50Gi
+
+gateway:
+  enabled: false
+
+loki:
+  auth_enabled: false
+
+  commonConfig:
+    replication_factor: 1
+
+  schemaConfig:
+    configs:
+      - from: 2024-01-01
+        store: tsdb
+        object_store: filesystem
+        schema: v13
+        index:
+          prefix: index_
+          period: 24h
+
+  storage:
+    type: filesystem
+    filesystem:
+      chunks_directory: /var/loki/chunks
+      rules_directory: /var/loki/rules
+
+  limits_config:
+    # The application's log-viewer requests up to 50,000 log lines per
+    # query and only retries at 5,000 if this is too low
+    max_entries_limit_per_query: 50000
+    retention_period: 720h # 30 days, default
+
+  compactor:
+    retention_enabled: true
+    delete_request_store: filesystem

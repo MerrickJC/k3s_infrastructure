@@ -1,0 +1,140 @@
+alloy:
+  mounts:
+    varlog: true
+
+  configMap:
+    content: |
+      // Ships Action-run Pod logs into Loki in the expected format.
+      // Uses the `action_run_uuid` Pod label
+
+      discovery.kubernetes "pods" {
+        role = "pod"
+      }
+
+      discovery.relabel "action_pods" {
+        targets = discovery.kubernetes.pods.targets
+
+        // Drop every pod EXCEPT ones carrying an action_run_uuid label.
+        rule {
+          source_labels = ["__meta_kubernetes_pod_label_action_run_uuid"]
+          regex         = ".+"
+          action        = "keep"
+        }
+
+        // Carry the uuid through as a label on the tailed stream.
+        rule {
+          source_labels = ["__meta_kubernetes_pod_label_action_run_uuid"]
+          target_label  = "action_run_uuid"
+        }
+
+        // Force the Loki stream label `job` to the literal string the
+        // app's LogQL query filters on
+        rule {
+          replacement  = "queue-consumer"
+          target_label = "job"
+        }
+
+        rule {
+          source_labels = ["__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
+          separator     = "/"
+          target_label  = "__path__"
+          replacement   = "/var/log/pods/*$1/*.log"
+        }
+      }
+
+      local.file_match "action_pods" {
+        path_targets = discovery.relabel.action_pods.output
+      }
+
+      loki.source.file "action_pods" {
+        targets    = local.file_match.action_pods.targets
+        forward_to = [loki.process.action_pods.receiver]
+      }
+
+      loki.process "action_pods" {
+        forward_to = [loki.write.default.receiver]
+
+        // Parses CRI log framing -> extracted.content / extracted.stream.
+        stage.cri {}
+
+        // Pack the message + the two fields the app needs into a flat
+        // JSON envelope
+        stage.pack {
+          labels = ["action_run_uuid", "stream"]
+        }
+
+        // stage.pack replaced the line with that flat JSON envelope,
+        // re-parse it so its fields are addressable again.
+        stage.json {
+          expressions = {
+            message         = "_entry",
+            action_run_uuid = "",
+            stream          = "",
+          }
+        }
+
+        // Reshape into the exact nested body the app's LogQL query expects
+        stage.template {
+          source   = "final"
+          template = `{"message":"{{ Replace (Replace .message "\\" "\\\\" -1) "\"" "\\\"" -1 }}","labels":{"action_run_uuid":"{{ .action_run_uuid }}"},"type":"{{ .stream }}"}`
+        }
+
+        stage.output {
+          source = "final"
+        }
+      }
+
+      // General-purpose pipeline: ships every pod's logs into Loki with
+      // plain namespace/pod/container labels, for debugging via Grafana UI
+
+      discovery.relabel "all_pods" {
+        targets = discovery.kubernetes.pods.targets
+
+        // Standard Alloy "tail this pod's on-node log file" pattern, same
+        // path convention as the action_pods pipeline.
+        rule {
+          source_labels = ["__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
+          separator     = "/"
+          target_label  = "__path__"
+          replacement   = "/var/log/pods/*$1/*.log"
+        }
+
+        // Generically useful labels for filtering in Grafana's Explore view.
+        rule {
+          source_labels = ["__meta_kubernetes_namespace"]
+          target_label  = "namespace"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_name"]
+          target_label  = "pod"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_container_name"]
+          target_label  = "container"
+        }
+      }
+
+      local.file_match "all_pods" {
+        path_targets = discovery.relabel.all_pods.output
+      }
+
+      loki.source.file "all_pods" {
+        targets    = local.file_match.all_pods.targets
+        forward_to = [loki.process.all_pods.receiver]
+      }
+
+      loki.process "all_pods" {
+        forward_to = [loki.write.default.receiver]
+
+        // Parses CRI log framing to remove timestamp/stream-prefixed format
+        stage.cri {}
+      }
+
+      loki.write "default" {
+        endpoint {
+          url = "http://loki:3100/loki/api/v1/push"
+        }
+      }
+
+controller:
+  type: daemonset

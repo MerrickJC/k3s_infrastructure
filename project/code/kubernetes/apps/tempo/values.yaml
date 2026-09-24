@@ -1,0 +1,26 @@
+fullnameOverride: tempo
+
+persistence:
+  enabled: true
+  size: 20Gi
+
+tempo:
+  metricsGenerator:
+    enabled: true
+    processor:
+      service_graphs: {}
+      span_metrics: {}
+    storage:
+      path: /var/tempo/metrics
+      remote_write:
+        - url: http://kube-prometheus-stack-prometheus.observability.svc:9090/api/v1/write
+          send_exemplars: true
+
+  # Turns on the service-graphs/span-metrics processors for all tenants
+  # which is what makes metricsGenerator above actually produce data
+  overrides:
+    defaults:
+      metrics_generator:
+        processors:
+          - service-graphs
+          - span-metrics

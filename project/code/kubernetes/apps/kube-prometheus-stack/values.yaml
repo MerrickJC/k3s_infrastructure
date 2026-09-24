@@ -1,0 +1,67 @@
+prometheus:
+  prometheusSpec:
+    # Required so Tempo can push span-metrics/service-graph metrics into
+    # Prometheus
+    enableRemoteWriteReceiver: true
+    enableFeatures:
+      - exemplar-storage
+      - native-histograms
+
+    # Allow ServiceMonitor/PodMonitor objects from ANY namespace to be
+    # picked up with no extra labels required
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          resources:
+            requests:
+              storage: 50Gi
+
+grafana:
+  admin:
+    existingSecret: grafana-admin-credentials
+    userKey: admin-user
+    passwordKey: admin-password
+
+  # Exposed via apps/ingress/routes/grafana.yaml
+  ingress:
+    enabled: false
+
+  additionalDataSources:
+    - name: Prometheus
+      type: prometheus
+      access: proxy
+      url: http://kube-prometheus-stack-prometheus.observability.svc:9090
+      isDefault: true
+
+    - name: Tempo
+      type: tempo
+      access: proxy
+      url: http://tempo:3200
+      uid: tempo
+      jsonData:
+        httpMethod: GET
+        serviceMap:
+          datasourceUid: prometheus
+        tracesToLogs:
+          datasourceUid: Loki
+          spanEndTimeShift: '30m'
+          spanStartTimeShift: '-30m'
+          filterByTraceID: true
+          filterBySpanID: true
+          tags: ['job']
+
+    - name: Loki
+      type: loki
+      access: proxy
+      url: http://loki:3100
+      jsonData:
+        maxLines: 1000
+        derivedFields:
+          - datasourceUid: Tempo
+            matcherRegex: 'trace_id\":\"(\w+)\"'
+            name: traceId
+            url: '$${__value.raw}'
