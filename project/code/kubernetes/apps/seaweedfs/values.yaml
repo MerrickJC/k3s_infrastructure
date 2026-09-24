@@ -1,0 +1,30 @@
+# individual components turned off in favour of allInOne mode
+master:
+  enabled: false
+volume:
+  enabled: false
+filer:
+  enabled: false
+s3:
+  enabled: false
+
+allInOne:
+  enabled: true
+
+  s3:
+    enabled: true
+    port: 9000
+    enableAuth: true
+
+    # SealedSecret see secrets/README.md
+    existingConfigSecret: seaweedfs-s3-config
+
+    createBuckets:
+      - name: data
+      - name: dbdumps
+      - name: action-artifacts
+        ttl: 90d
+
+  data:
+    type: persistentVolumeClaim
+    size: 200Gi
