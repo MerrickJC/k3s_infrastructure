@@ -1,0 +1,10 @@
+appName: zot
+namespace: zot
+
+hasHelm: true
+hasManifests: true
+
+helm:
+  repoURL: https://zotregistry.dev/helm-charts
+  chart: zot
+  targetRevision: 0.1.125

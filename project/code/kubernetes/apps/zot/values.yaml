@@ -1,0 +1,94 @@
+replicaCount: 1
+
+service:
+  type: ClusterIP   # chart default is NodePort but we use Traefik IngressRoute instead
+  port: 5000
+
+persistence: false   # all blob data lives in the zot-registry S3 bucket, no local PVC needed
+
+ingress:
+  enabled: false      # don't use chart default, create our own IngressRoute
+httproute:
+  enabled: false
+
+# No dedicated values.yaml schema exists for the S3 storage driver or OIDC auth, so both
+# are written out here as zot native configs
+mountConfig: true
+configFiles:
+  config.json: |-
+    {
+      "distSpecVersion": "1.1.1",
+      "storage": {
+        "rootDirectory": "/var/lib/registry",
+        "dedupe": true,
+        "storageDriver": {
+          "name": "s3",
+          "rootdirectory": "/zot",
+          "region": "us-east-1",
+          "regionendpoint": "http://seaweedfs-all-in-one.seaweedfs.svc.cluster.local:9000",
+          "bucket": "zot-registry",
+          "forcepathstyle": true,
+          "secure": false,
+          "skipverify": true
+        }
+      },
+      "http": {
+        "address": "0.0.0.0",
+        "port": "5000",
+        "externalUrl": "https://registry.merrickcampbell.au",
+        "auth": {
+          "htpasswd": {
+            "path": "/secrets/htpasswd/htpasswd"
+          },
+          "openid": {
+            "providers": {
+              "oidc": {
+                "name": "Dex",
+                "issuer": "https://dex.merrickcampbell.au",
+                "credentialsFile": "/secrets/oidc/oidc-credentials.json",
+                "keypath": "",
+                "scopes": ["openid", "profile", "email", "groups"]
+              }
+            }
+          }
+        },
+        "accessControl": {
+          "repositories": {
+            "**": {
+              "defaultPolicy": ["read", "create", "update"]
+            }
+          },
+          "adminPolicy": {
+            "users": ["admin"],
+            "actions": ["read", "create", "update", "delete"]
+          }
+        }
+      },
+      "log": {"level": "info"}
+    }
+
+# since accesskey/secretkey are omitted from storageDriver above, Zot defaults
+# to standard AWS SDK env-var credentials (AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY,
+# specified below). This prevents credentials from appearing in the ConfigMap
+env:
+  - name: AWS_ACCESS_KEY_ID
+    valueFrom:
+      secretKeyRef:
+        name: zot-s3-credentials
+        key: AWS_ACCESS_KEY_ID
+  - name: AWS_SECRET_ACCESS_KEY
+    valueFrom:
+      secretKeyRef:
+        name: zot-s3-credentials
+        key: AWS_SECRET_ACCESS_KEY
+
+# The chart's mountSecret/secretFiles render as plaintext into values.yaml,
+# which is undesirable for sensitive information, so we mount them instead
+# as externalSecrets
+mountSecret: false
+
+externalSecrets:
+  - secretName: zot-htpasswd
+    mountPath: /secrets/htpasswd
+  - secretName: zot-oidc-credentials
+    mountPath: /secrets/oidc

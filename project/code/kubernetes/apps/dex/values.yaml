@@ -7,6 +7,8 @@ envFrom:
       name: argocd-dex-client-secret
   - secretRef:
       name: jenkins-dex-client-secret
+  - secretRef:
+      name: zot-dex-client-secret
 
 config:
   issuer: https://dex.merrickcampbell.au
@@ -45,6 +47,11 @@ config:
         - 'https://jenkins.merrickcampbell.au/securityRealm/finishLogin'
       name: 'Jenkins'
       secretEnv: JENKINS_DEX_CLIENT_SECRET
+    - id: zot
+      redirectURIs:
+        - 'https://registry.merrickcampbell.au/zot/auth/callback/oidc'
+      name: 'Zot Registry'
+      secretEnv: ZOT_DEX_CLIENT_SECRET
 
 
   connectors:

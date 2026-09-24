@@ -24,6 +24,7 @@ allInOne:
       - name: dbdumps
       - name: action-artifacts
         ttl: 90d
+      - name: zot-registry   # backs the Zot container registry's S3 storage driver
 
   data:
     type: persistentVolumeClaim
