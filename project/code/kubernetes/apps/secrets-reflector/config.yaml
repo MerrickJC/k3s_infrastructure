@@ -1,0 +1,10 @@
+appName: secrets-reflector
+namespace: secrets
+
+hasHelm: true
+hasManifests: false
+
+helm:
+  repoURL: https://emberstack.github.io/helm-charts
+  chart: reflector
+  targetRevision: 10.0.65
