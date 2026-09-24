@@ -1,0 +1,10 @@
+appName: secrets-generator
+namespace: secrets
+
+hasHelm: true
+hasManifests: false
+
+helm:
+  repoURL: https://helm.mittwald.de
+  chart: kubernetes-secret-generator
+  targetRevision: 3.4.1

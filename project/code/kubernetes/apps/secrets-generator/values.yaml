@@ -1,0 +1,3 @@
+# Enables the StringSecret/BasicAuth/SSHKeyPair CRDs (secretgenerator.mittwald.de/v1alpha1)
+crds:
+  enable: true
