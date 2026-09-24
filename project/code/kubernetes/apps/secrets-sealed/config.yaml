@@ -1,4 +1,4 @@
-appName: sealed-secrets
+appName: secrets-sealed
 namespace: sealed-secrets
 
 hasHelm: false
