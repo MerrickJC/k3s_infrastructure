@@ -30,11 +30,20 @@ grafana:
   ingress:
     enabled: false
 
+  # Without this, the chart auto-provisions its own "Prometheus" datasource
+  # (uid: prometheus) which is also marked isDefault and collides with the
+  # one below which makes Grafana refuse to start ("Only one datasource per
+  # organization can be marked as default")
+  sidecar:
+    datasources:
+      defaultDatasourceEnabled: false
+
   additionalDataSources:
     - name: Prometheus
       type: prometheus
       access: proxy
       url: http://kube-prometheus-stack-prometheus.observability.svc:9090
+      uid: prometheus
       isDefault: true
 
     - name: Tempo
@@ -47,7 +56,7 @@ grafana:
         serviceMap:
           datasourceUid: prometheus
         tracesToLogs:
-          datasourceUid: Loki
+          datasourceUid: loki
           spanEndTimeShift: '30m'
           spanStartTimeShift: '-30m'
           filterByTraceID: true
@@ -58,10 +67,11 @@ grafana:
       type: loki
       access: proxy
       url: http://loki:3100
+      uid: loki
       jsonData:
         maxLines: 1000
         derivedFields:
-          - datasourceUid: Tempo
+          - datasourceUid: tempo
             matcherRegex: 'trace_id\":\"(\w+)\"'
             name: traceId
             url: '$${__value.raw}'
