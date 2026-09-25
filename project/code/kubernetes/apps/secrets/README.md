@@ -3,7 +3,7 @@
 Every secret's source of truth lives in this app, deployed into a single `secrets` namespace, and gets fanned out to other namespace as needed. Three apps make this work:
 
 - [secrets-sealed](../secrets-sealed/): the Sealed Secrets allows encrypted secrets to be committed to git and the controller decrypts `SealedSecret` ciphertext into a `Secret` which apps can use.
-- [secrets-reflector](../secrets-reflector): [kubernetes-reflector](https://github.com/emberstack/kubernetes-reflector). It watches `Secret` objects carrying the `reflector.v1.k8s.emberstack.com/reflection-allowed` annotation and mirrors them into the namespaces listed in `reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces`. It ensures mirrors are in sync whenever the source changes.
+- [secrets-reflector](../secrets-reflector): [kubernetes-reflector](https://github.com/emberstack/kubernetes-reflector). It watches `Secret` objects carrying the `reflector.v1.k8s.emberstack.com/reflection-allowed` annotation and mirrors secrets into the namespaces listed in `reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces`. It is important to note that reflector will update secrets with only those two fields, but automatically reflecting a secret by creating a new secret also requires `reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"` on the source `Secret`. It ensures mirrors are in sync whenever the source changes.
 - [secrets-generator](../secrets-generator): [kubernetes-secret-generator](https://github.com/mittwald/kubernetes-secret-generator). It generates a random value directly in-cluster for secrets whose value is an arbitrary agreed-upon token with no external source, so nothing has to be sealed at all.
 
 This app (`apps/secrets`) holds the manifests themselves as either a `SealedSecret` (externally-sourced value) or an annotated `Secret` stub (internally-generated value). Every secret lives in the `secrets` namespace and is reflected into other namespaces based on configuration. Every reflected copy keeps the same secret name and key(s).
@@ -17,7 +17,7 @@ This app (`apps/secrets`) holds the manifests themselves as either a `SealedSecr
 ## Adding a new shared or generated secret
 
 1. Decide: does the value come from outside the cluster (sealed) or is it just an agreed-upon token between services (generated)?
-2. Add one manifest here, in the `secrets` namespace under either the `generated` or `sealed` folder, with `reflection-allowed-namespaces` set to every namespace that needs a copy.
+2. Add one manifest here, in the `secrets` namespace under either the `generated` or `sealed` folder, with `reflection-allowed-namespaces` set to every namespace that needs a copy, `reflection-auto-enabled: "true"` set to make secrets-reflector create the secret if it doesn't already exist in that namespace
 3. Nothing needs to change in the consuming app(s) as long as the secret name and key match what they already expect.
 
 ## Rotation
