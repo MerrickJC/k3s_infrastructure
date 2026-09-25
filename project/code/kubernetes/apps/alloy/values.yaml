@@ -76,7 +76,7 @@ alloy:
         // Reshape into the exact nested body the app's LogQL query expects
         stage.template {
           source   = "final"
-          template = `{"message":"{{ Replace (Replace .message "\\" "\\\\" -1) "\"" "\\\"" -1 }}","labels":{"action_run_uuid":"{{ .action_run_uuid }}"},"type":"{{ .stream }}"}`
+          template = `{"message":"{{"{{"}} Replace (Replace .message "\\" "\\\\" -1) "\"" "\\\"" -1 {{"}}"}}","labels":{"action_run_uuid":"{{"{{"}} .action_run_uuid {{"}}"}}"},"type":"{{"{{"}} .stream {{"}}"}}"}`
         }
 
         stage.output {
