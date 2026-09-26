@@ -1,0 +1,110 @@
+crds:
+  install: true
+
+controller:
+  # Cluster-wide controller so workflows can be submitted from any namespace
+  workflowNamespaces: []
+
+  workflowDefaults:
+    spec:
+      # Standard hygiene so finished Workflows (and their Pods) don't
+      # accumulate forever in etcd
+      ttlStrategy:
+        secondsAfterCompletion: 86400     # 1 day
+        secondsAfterSuccess: 3600         # 1 hour
+        secondsAfterFailure: 604800       # 1 week - keep failures around longer for debugging
+      podGC:
+        strategy: OnPodCompletion
+
+  # Restarts the controller when the S3/Postgres secrets below change
+  deploymentAnnotations:
+    reloader.stakater.com/auto: "true"
+
+  # Uncomment to additionally archive completed Workflows to Postgres for
+  # long-term/searchable history instead of relying solely on the TTLs
+  # above. Needs a role/database in apps/postgresql's shared cluster and
+  # that role's credentials Secret reflected into the "argo" namespace
+  # (see apps/postgresql/manifest.yaml and apps/secrets/README.md).
+  # persistence:
+  #   archive: true
+  #   postgresql:
+  #     host: postgres-rw.postgresql.svc.cluster.local
+  #     port: 5432
+  #     database: appdb
+  #     tableName: argo_workflows
+  #     userNameSecret:
+  #       name: postgres-app
+  #       key: username
+  #     passwordSecret:
+  #       name: postgres-app
+  #       key: password
+  #     ssl: false
+
+server:
+  # we create our own IngressRoute
+  ingress:
+    enabled: false
+
+  # TLS is terminated at Traefik/Cloudflare, not by Argo Workflows
+  secure: false
+
+  # SSO via Dex
+  extraArgs:
+    - --auth-mode=sso
+
+  sso:
+    enabled: true
+    issuer: https://dex.merrickcampbell.au
+    clientId:
+      name: argo-workflows-dex-client-secret
+      key: ARGO_WORKFLOWS_DEX_CLIENT_ID
+    clientSecret:
+      name: argo-workflows-dex-client-secret
+      key: ARGO_WORKFLOWS_DEX_CLIENT_SECRET
+    redirectUrl: https://workflows.merrickcampbell.au/oauth2/callback
+    scopes:
+      - openid
+      - profile
+      - email
+      - groups
+    rbac:
+      # Impersonate the ServiceAccount matched by rbac-rule annotations
+      # (see manifest.yaml) instead of granting every SSO user one fixed
+      # set of permissions
+      enabled: true
+
+  # Restarts the controller when the Dex secrets above change
+  deploymentAnnotations:
+    reloader.stakater.com/auto: "true"
+
+# Artifact repository backed by the cluster's SeaweedFS S3 gateway
+useStaticCredentials: false
+artifactRepository:
+  archiveLogs: true
+  s3:
+    endpoint: seaweedfs-all-in-one.seaweedfs.svc.cluster.local:9000
+    bucket: argo-workflows
+    region: us-east-1
+    insecure: true
+    accessKeySecret:
+      name: argo-workflows-s3-credentials
+      key: AWS_ACCESS_KEY_ID
+    secretKeySecret:
+      name: argo-workflows-s3-credentials
+      key: AWS_SECRET_ACCESS_KEY
+
+# Hardened defaults for every Workflow step: run as non-root, no privilege
+# escalation, all Linux capabilities dropped
+executor:
+  securityContext:
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+
+mainContainer:
+  securityContext:
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]

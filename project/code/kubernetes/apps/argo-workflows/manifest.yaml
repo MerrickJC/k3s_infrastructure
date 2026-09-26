@@ -1,0 +1,71 @@
+---
+# SSO RBAC (server.sso.rbac.enabled: true): argo-server impersonates the
+# ServiceAccount whose `rbac-rule` expression matches the logged-in user's
+# Dex ID token groups claim, highest `rbac-rule-precedence` wins. What that
+# ServiceAccount can see/do in the UI is whatever its own RoleBinding grants.
+# See https://argo-workflows.readthedocs.io/en/latest/argo-server-sso/
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argo-workflows-admin
+  namespace: argo
+  annotations:
+    workflows.argoproj.io/rbac-rule: "'monashmotorsport:autonomous-systems' in groups"
+    workflows.argoproj.io/rbac-rule-precedence: "1"
+---
+# Kubernetes 1.24+ stopped auto-creating ServiceAccount token Secrets, but
+# SSO RBAC requires one to exist so argo-server can use it for impersonation
+apiVersion: v1
+kind: Secret
+metadata:
+  name: argo-workflows-admin.service-account-token
+  namespace: argo
+  annotations:
+    kubernetes.io/service-account.name: argo-workflows-admin
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: argo-workflows-admin
+subjects:
+  - kind: ServiceAccount
+    name: argo-workflows-admin
+    namespace: argo
+roleRef:
+  kind: ClusterRole
+  name: admin
+  apiGroup: rbac.authorization.k8s.io
+---
+# Fallback for any authenticated Dex user that doesn't match a more specific
+# rule above: read-only view of workflows
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argo-workflows-readonly
+  namespace: argo
+  annotations:
+    workflows.argoproj.io/rbac-rule: "true"
+    workflows.argoproj.io/rbac-rule-precedence: "0"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: argo-workflows-readonly.service-account-token
+  namespace: argo
+  annotations:
+    kubernetes.io/service-account.name: argo-workflows-readonly
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: argo-workflows-readonly
+subjects:
+  - kind: ServiceAccount
+    name: argo-workflows-readonly
+    namespace: argo
+roleRef:
+  kind: ClusterRole
+  name: view
+  apiGroup: rbac.authorization.k8s.io

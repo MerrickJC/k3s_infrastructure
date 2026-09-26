@@ -1,0 +1,14 @@
+appName: argo-workflows
+namespace: argo
+
+hasHelm: true
+hasManifests: true
+
+helm:
+  repoURL: https://argoproj.github.io/argo-helm
+  chart: argo-workflows
+  targetRevision: 2.0.8
+
+# Required due to large CRD set
+syncOptions:
+  - ServerSideApply=true
