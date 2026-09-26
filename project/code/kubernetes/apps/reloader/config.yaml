@@ -1,0 +1,10 @@
+appName: reloader
+namespace: reloader
+
+hasHelm: true
+hasManifests: false
+
+helm:
+  repoURL: https://stakater.github.io/stakater-charts
+  chart: reloader
+  targetRevision: 2.2.17
