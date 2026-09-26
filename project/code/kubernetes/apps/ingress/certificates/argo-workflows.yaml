@@ -1,0 +1,12 @@
+# apiVersion: cert-manager.io/v1
+# kind: Certificate
+# metadata:
+#   name: argo-workflows-tls
+#   namespace: argo
+# spec:
+#   secretName: argo-workflows-tls
+#   issuerRef:
+#     name: letsencrypt-prod
+#     kind: ClusterIssuer
+#   dnsNames:
+#     - workflows.merrickcampbell.au

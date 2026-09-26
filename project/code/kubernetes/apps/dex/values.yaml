@@ -9,6 +9,8 @@ envFrom:
       name: jenkins-dex-client-secret
   - secretRef:
       name: zot-dex-client-secret
+  - secretRef:
+      name: argo-workflows-dex-client-secret
 
 # Restarts the pod when any of the envFrom secrets above change
 deploymentAnnotations:
@@ -56,6 +58,11 @@ config:
         - 'https://registry.merrickcampbell.au/zot/auth/callback/oidc'
       name: 'Zot Registry'
       secretEnv: ZOT_DEX_CLIENT_SECRET
+    - id: argo-workflows
+      redirectURIs:
+        - 'https://workflows.merrickcampbell.au/oauth2/callback'
+      name: 'Argo Workflows'
+      secretEnv: ARGO_WORKFLOWS_DEX_CLIENT_SECRET
 
 
   connectors:
