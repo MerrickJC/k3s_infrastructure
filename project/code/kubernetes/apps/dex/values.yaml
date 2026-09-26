@@ -10,6 +10,10 @@ envFrom:
   - secretRef:
       name: zot-dex-client-secret
 
+# Restarts the pod when any of the envFrom secrets above change
+deploymentAnnotations:
+  reloader.stakater.com/auto: "true"
+
 config:
   issuer: https://dex.merrickcampbell.au
   storage:
@@ -59,7 +63,7 @@ config:
     id: github
     name: GitHub
     config:
-      clientID: $GITHUB_CLIENT_ID
+      clientID: Iv23lip9oB9MJI7V38tA
       clientSecret: $GITHUB_CLIENT_SECRET
       redirectURI: https://dex.merrickcampbell.au/callback
 

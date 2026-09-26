@@ -11,6 +11,10 @@ s3:
 allInOne:
   enabled: true
 
+  # Restarts the pod whenever seaweedfs-s3-config's content changes
+  annotations:
+    secret.reloader.stakater.com/reload: seaweedfs-s3-config
+
   s3:
     enabled: true
     port: 9000

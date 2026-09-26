@@ -1,5 +1,9 @@
 replicaCount: 1
 
+# Restarts the pod when Secrets/ConfigMaps change
+deploymentAnnotations:
+  reloader.stakater.com/auto: "true"
+
 service:
   type: ClusterIP   # chart default is NodePort but we use Traefik IngressRoute instead
   port: 5000

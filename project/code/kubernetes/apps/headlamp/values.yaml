@@ -5,6 +5,9 @@ env:
         name: headlamp-dex-client-secret
         key: HEADLAMP_DEX_CLIENT_SECRET
 
+deploymentAnnotations:
+  reloader.stakater.com/auto: "true"
+
 config:
   oidc:
     clientID: headlamp

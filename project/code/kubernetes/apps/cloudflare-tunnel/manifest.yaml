@@ -3,6 +3,9 @@ kind: Deployment
 metadata:
   name: cloudflared-deployment
   namespace: cloudflare
+  annotations:
+    # Restarts the pod when tunnel-token changes
+    secret.reloader.stakater.com/reload: "tunnel-token"
 spec:
   replicas: 1
   selector:
