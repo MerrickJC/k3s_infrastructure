@@ -1,5 +1,10 @@
 appName: secrets-sealed
 namespace: sealed-secrets
 
-hasHelm: false
-hasManifests: true
+hasHelm: true
+hasManifests: false
+
+helm:
+  repoURL: https://bitnami.github.io/sealed-secrets
+  chart: sealed-secrets
+  targetRevision: 2.20.0

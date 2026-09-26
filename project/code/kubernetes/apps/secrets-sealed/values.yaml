@@ -1,0 +1,5 @@
+# Pinned to the exact controller version already running (installed via raw
+# manifest previously) so this migration only changes packaging, not app
+# version. Bump deliberately in a separate change once this is verified.
+image:
+  tag: 0.38.4
