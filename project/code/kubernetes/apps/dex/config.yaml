@@ -2,7 +2,7 @@ appName: dex
 namespace: dex
 
 hasHelm: true
-hasManifests: true
+hasManifests: false
 
 helm:
   repoURL: https://charts.dexidp.io
