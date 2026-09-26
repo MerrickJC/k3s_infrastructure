@@ -54,6 +54,27 @@ configFiles:
                 "scopes": ["openid", "profile", "email", "groups"]
               }
             }
+          },
+          "bearer": {
+            "realm": "zot",
+            "service": "zot-service",
+            "oidc": [
+              {
+                "issuer": "https://token.actions.githubusercontent.com",
+                "audiences": ["zot"],
+                "claimMapping": {
+                  "variables": [
+                    {"name": "repo", "expression": "claims.repository"},
+                    {"name": "ref", "expression": "claims.ref"}
+                  ],
+                  "validations": [
+                    {"expression": "vars.repo == 'MerrickJC/kube_kleinkram'", "message": "only MerrickJC/kube_kleinkram may authenticate"},
+                    {"expression": "vars.ref == 'refs/heads/main'", "message": "only the main branch may push"}
+                  ],
+                  "username": "vars.repo"
+                }
+              }
+            ]
           }
         },
         "accessControl": {
