@@ -2,7 +2,7 @@ appName: juicefs
 namespace: juicefs
 
 hasHelm: true
-hasManifests: false
+hasManifests: true
 
 helm:
   repoURL: https://juicedata.github.io/charts/

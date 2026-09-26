@@ -1,0 +1,30 @@
+---
+# Dedicated low-privilege role + database for JuiceFS's metadata engine.
+# Read by apps/juicefs/secrets/juicefs-sc-secret-job.yaml to build the
+# JuiceFS StorageClass secret's metaurl.
+#
+# The role's password lives in apps/secrets/generated/juicefs-postgres-credentials.yaml
+# (namespace `secrets`) and is reflected into this namespace
+apiVersion: postgresql.cnpg.io/v1
+kind: DatabaseRole
+metadata:
+  name: juicefs
+spec:
+  cluster:
+    name: postgres
+  name: juicefs
+  login: true
+  databaseRoleReclaimPolicy: retain
+  passwordSecret:
+    name: juicefs-postgres-credentials
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: juicefs
+spec:
+  name: juicefs
+  owner: juicefs
+  cluster:
+    name: postgres
+  databaseReclaimPolicy: retain

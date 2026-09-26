@@ -1,3 +1,12 @@
 sidecars:
   nodeDriverRegistrarImage:
     tag: v2.17.0
+
+storageClasses:
+  - name: juicefs-sc
+    enabled: true
+    # Backend credentials/metaurl are composed into this secret by
+    # apps/juicefs/secrets/juicefs-sc-secret-job.yaml
+    existingSecret: juicefs-sc-secret
+    reclaimPolicy: Retain
+    allowVolumeExpansion: true
