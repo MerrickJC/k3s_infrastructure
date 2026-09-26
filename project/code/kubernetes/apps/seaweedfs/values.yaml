@@ -29,6 +29,7 @@ allInOne:
       - name: action-artifacts
         ttl: 90d
       - name: zot-registry   # backs the Zot container registry's S3 storage driver
+      - name: argo-workflows # backs Argo Workflows' artifact repository
 
   data:
     type: persistentVolumeClaim
