@@ -42,7 +42,7 @@ configFiles:
         "externalUrl": "https://registry.merrickcampbell.au",
         "auth": {
           "htpasswd": {
-            "path": "/secrets/htpasswd/htpasswd"
+            "path": "/secrets/htpasswd/auth"
           },
           "openid": {
             "providers": {
