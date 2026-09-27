@@ -1,0 +1,13 @@
+# Provides a patch which allows Reloader (see apps/reloader) to restart
+# the ArgoCD server if the argocd-dex-client-secret secret is changed.
+# This prevent stale secret values being kept in the container until
+# it is next restarted
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd-server
+spec:
+  template:
+    metadata:
+      annotations:
+        secret.reloader.stakater.com/reload: argocd-dex-client-secret
