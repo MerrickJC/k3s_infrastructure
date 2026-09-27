@@ -1,4 +1,4 @@
-appName: kube_kleinkram
+appName: kube-kleinkram
 namespace: kleinkram
 
 hasHelm: false
