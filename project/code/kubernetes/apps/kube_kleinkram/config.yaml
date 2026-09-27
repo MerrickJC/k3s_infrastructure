@@ -1,0 +1,23 @@
+appName: kube_kleinkram
+namespace: kleinkram
+
+hasHelm: false
+hasManifests: true
+
+# Chart lives in kube_kleinkram's own private git repo, not a chart repo/OCI
+# registry, see apps/example/config.yaml's 'helmGit' docs.
+# Repo is registered with ArgoCD as a Repository credential via
+# argocd-management/kube-kleinkram-repository-secret.yaml (SSH deploy key)
+helmGit:
+  repoURL: git@github.com:MerrickJC/kube_kleinkram.git
+  path: helm/kleinkram
+  targetRevision: main
+
+# The chart's Deployment is scaled by an HPA, so we need to ignore the 
+# replicas field or else ArgoCD and the HPA fight over spec.replicas
+# and the Application flaps between Synced/OutOfSync
+ignoreDifferences:
+  - group: apps
+    kind: Deployment
+    jsonPointers:
+      - /spec/replicas

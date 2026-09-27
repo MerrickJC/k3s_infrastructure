@@ -9,6 +9,7 @@ resources:
   - ./argocd-manifest.yaml
   - ./unified-automation.yaml
   - ./repo-sealed-secret.yaml
+  - ./kube-kleinkram-repository-secret.yaml
 
 patches:
   - path: ./argocd-cm-patch.yaml

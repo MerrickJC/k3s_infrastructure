@@ -1,0 +1,31 @@
+# Only keys that differ from the chart's defaults are listed.
+# Anything not mentioned here uses the chart's default as-is.
+
+image:
+  # Pull from our private Zot registry
+  pullSecrets:
+    - zot-pull-secret
+  
+config:
+  s3Endpoint: 'http://seaweedfs-all-in-one.seaweedfs.svc.cluster.local:9000'
+  s3DataBucketName: data
+  s3DbBucketName: dbdumps
+
+  # Port/database name already match the chart's defaults (5432 / kleinkram)
+  dbHost: postgres-rw.postgresql.svc.cluster.local
+
+  # TODO: create the 'kleinkram' database/role in apps/postgresql/
+
+  frontendUrl: 'https://kleinkram.merrickcampbell.au'
+  docsUrl: 'https://docs.kleinkram.merrickcampbell.au'
+  backendUrl: 'https://api.kleinkram.merrickcampbell.au'
+
+observability:
+  prometheusUrl: 'http://kube-prometheus-stack-prometheus.observability.svc:9090'
+
+# TODO:
+#   - secretNames.* (db/s3/jwt/googleOauth/githubOauth/googleServiceAccount):
+#     none of these Secrets exist yet in this cluster.
+#   - argo.artifactRepository.credentialsSecretName /
+#     kleinkram-artifact-repository ConfigMap: neither exists yet.
+#   - setup ingress: left disabled (default)
