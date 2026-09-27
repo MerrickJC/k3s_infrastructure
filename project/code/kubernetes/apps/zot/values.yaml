@@ -17,6 +17,14 @@ httproute:
 
 # No dedicated values.yaml schema exists for the S3 storage driver or OIDC auth, so both
 # are written out here as zot native configs
+#
+# http.auth.bearer (GitHub Actions OIDC token trust) is intentionally NOT configured
+# here even though it's the more secure option (keyless, short-lived, repo/branch-scoped).
+# zot v2.1.21 disables ALL other auth methods, including openid.oidc web login, whenever
+# bearer.oidc is also configured (https://github.com/project-zot/zot/issues/4033). Until
+# a fix is shipped, GitHub Actions pushes use the dedicated `pusher` htpasswd credential
+# instead. See apps/secrets/generated/zot-pusher-htpasswd.yaml. Revisit re-adding
+# bearer.oidc (and retiring the pusher credential) once Zot fixes the issue.
 mountConfig: true
 configFiles:
   config.json: |-
@@ -54,27 +62,6 @@ configFiles:
                 "scopes": ["openid", "profile", "email", "groups"]
               }
             }
-          },
-          "bearer": {
-            "realm": "zot",
-            "service": "zot-service",
-            "oidc": [
-              {
-                "issuer": "https://token.actions.githubusercontent.com",
-                "audiences": ["zot"],
-                "claimMapping": {
-                  "variables": [
-                    {"name": "repo", "expression": "claims.repository"},
-                    {"name": "ref", "expression": "claims.ref"}
-                  ],
-                  "validations": [
-                    {"expression": "vars.repo == 'MerrickJC/kube_kleinkram'", "message": "only MerrickJC/kube_kleinkram may authenticate"},
-                    {"expression": "vars.ref == 'refs/heads/main'", "message": "only the main branch may push"}
-                  ],
-                  "username": "vars.repo"
-                }
-              }
-            ]
           }
         },
         "accessControl": {
@@ -123,7 +110,7 @@ env:
 mountSecret: false
 
 externalSecrets:
-  - secretName: zot-htpasswd-combined   # admin + puller users merged, see apps/zot/secrets/README.md
+  - secretName: zot-htpasswd-combined   # admin + puller + pusher users merged, see apps/zot/secrets/README.md
     mountPath: /secrets/htpasswd
   - secretName: zot-oidc-credentials
     mountPath: /secrets/oidc
