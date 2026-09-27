@@ -11,6 +11,8 @@ envFrom:
       name: zot-dex-client-secret
   - secretRef:
       name: argo-workflows-dex-client-secret
+  - secretRef:
+      name: grafana-dex-client-secret
 
 # Restarts the pod when any of the envFrom secrets above change
 deploymentAnnotations:
@@ -63,6 +65,11 @@ config:
         - 'https://workflows.merrickcampbell.au/oauth2/callback'
       name: 'Argo Workflows'
       secretEnv: ARGO_WORKFLOWS_DEX_CLIENT_SECRET
+    - id: grafana
+      redirectURIs:
+        - 'https://grafana.merrickcampbell.au/login/generic_oauth'
+      name: 'Grafana'
+      secretEnv: GRAFANA_DEX_CLIENT_SECRET
 
 
   connectors:

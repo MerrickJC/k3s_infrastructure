@@ -30,6 +30,40 @@ grafana:
   ingress:
     enabled: false
 
+  # SSO via Dex. client_secret is deliberately omitted here since Grafana maps
+  # ini keys to GF_<SECTION>_<KEY> env vars, so envValueFrom below injects
+  # GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET instead of putting the secret in
+  # plaintext in this values file. Login form stays enabled so the admin
+  # credentials remain a break-glass login
+  grafana.ini:
+    server:
+      domain: grafana.merrickcampbell.au
+      root_url: https://grafana.merrickcampbell.au
+    auth.generic_oauth:
+      enabled: true
+      name: Dex
+      client_id: grafana
+      scopes: openid profile email groups
+      auth_url: https://dex.merrickcampbell.au/auth
+      token_url: https://dex.merrickcampbell.au/token
+      api_url: https://dex.merrickcampbell.au/userinfo
+      login_attribute_path: email
+      name_attribute_path: name
+      email_attribute_path: email
+      groups_attribute_path: groups
+      role_attribute_path: "contains(groups[*], 'monashmotorsport:autonomous-systems') && 'Admin' || 'Viewer'"
+      allow_sign_up: true
+
+  envValueFrom:
+    GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET:
+      secretKeyRef:
+        name: grafana-dex-client-secret
+        key: GRAFANA_DEX_CLIENT_SECRET
+
+  # Restarts Grafana when the Dex client secret above changes
+  annotations:
+    reloader.stakater.com/auto: "true"
+
   # Without this, the chart auto-provisions its own "Prometheus" datasource
   # (uid: prometheus) which is also marked isDefault and collides with the
   # one below which makes Grafana refuse to start ("Only one datasource per
