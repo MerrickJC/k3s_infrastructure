@@ -32,10 +32,24 @@ helm:
   # this repoURL + chart + targetRevision combination, so no extra flag is
   # needed. If the OCI registry is private, register its credentials once
   # as an ArgoCD Repository sealed secret (type: helm, enableOCI: "true")
+  # WARNING: Do not set both 'helm' and 'helmGit' on the same app.
 
   repoURL: https://<url>
   chart: <chart-name>
   targetRevision: <version-number>        # should be the chart version
+
+helmGit:
+# Alternative to the 'helm' block above: use this when the chart itself
+# lives in a git repo instead of a chart repo/OCI registry index
+# entry (e.g. a chart committed alongside an app's own source code).
+# repoURL can be a private repo, in which case it must first be
+# registered with ArgoCD as a Repository credential (see
+# argocd-management/repo-sealed-secret.yaml for the pattern).
+# WARNING: Do not set both 'helm' and 'helmGit' on the same app.
+
+  repoURL: git@github.com:<org>/<repo>.git
+  path: <path-to-chart-dir-in-that-repo>
+  targetRevision: <branch-tag-or-commit>
 
 # Optional: extra entries for this Application's spec.syncPolicy.syncOptions
 # (uses ArgoCD's own "Key=Value" strings: https://argo-cd.readthedocs.io/en/stable/user-guide/sync-options/).

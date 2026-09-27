@@ -73,6 +73,18 @@ spec:
           targetRevision: '{{ .revision }}'
           ref: values
         {{- end }}
+        {{- if hasKey . "helmGit" }}
+        - repoURL: '{{ .helmGit.repoURL }}'
+          path: '{{ .helmGit.path }}'
+          targetRevision: '{{ .helmGit.targetRevision }}'
+          helm:
+            valueFiles:
+              - '$values/project/code/kubernetes/apps/{{ .appName }}/values.yaml'
+            ignoreMissingValueFiles: true
+        - repoURL: '{{ .repoURL }}'
+          targetRevision: '{{ .revision }}'
+          ref: values
+        {{- end }}
         {{- if (default false .hasManifests) }}
         - repoURL: '{{ .repoURL }}'
           targetRevision: '{{ .revision }}'
