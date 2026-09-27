@@ -1,0 +1,50 @@
+# See observability-spec.md (repo root) section 4.2/5.1 Option A and TODO.md
+# in this folder. loki/tempo are hardcoded, unqualified hostnames this app
+# resolves within its own namespace; the real Services live in `observability`.
+apiVersion: v1
+kind: Service
+metadata:
+  name: loki
+  namespace: kleinkram
+spec:
+  type: ExternalName
+  externalName: loki.observability.svc.cluster.local
+  ports:
+    - port: 3100
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tempo
+  namespace: kleinkram
+spec:
+  type: ExternalName
+  externalName: tempo.observability.svc.cluster.local
+  ports:
+    - port: 4318
+---
+# PLACEHOLDER: selector.matchLabels must match whatever labels the chart puts
+# on the api-server Pod/Service
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kleinkram-api-server
+  namespace: kleinkram
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: api-server
+  endpoints:
+    - port: "3000"
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kleinkram-api-server-metrics
+  namespace: kleinkram
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: api-server
+  endpoints:
+    - port: "9464"
