@@ -15,8 +15,8 @@ config:
   dbHost: postgres-rw.postgresql.svc.cluster.local
 
   frontendUrl: 'https://kleinkram.merrickcampbell.au'
-  docsUrl: 'https://docs.kleinkram.merrickcampbell.au'
-  backendUrl: 'https://api.kleinkram.merrickcampbell.au'
+  docsUrl: 'https://kleinkram-docs.merrickcampbell.au'
+  backendUrl: 'https://kleinkram-api.merrickcampbell.au'
 
   # TODO: this is mock auth for testing, replace with real auth later
   vitePublicOauthFake: 'true'
