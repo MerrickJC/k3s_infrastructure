@@ -32,6 +32,10 @@ allInOne:
       - name: argo-workflows # backs Argo Workflows' artifact repository
       - name: juicefs        # backs JuiceFS's object storage
 
+  # local-path-retain (defined alongside this file) instead of the cluster's
+  # default 'local-path' StorageClass, whose reclaimPolicy: Delete permanently
+  # destroys this volume's data if the PVC is ever deleted and recreated.
   data:
     type: persistentVolumeClaim
+    storageClass: local-path-retain
     size: 200Gi

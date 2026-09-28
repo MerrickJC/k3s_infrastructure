@@ -1,0 +1,12 @@
+# Mirrors k3s's default 'local-path' StorageClass, except reclaimPolicy is
+# Retain instead of Delete. If the SeaweedFS PVC is ever deleted and
+# recreated (ArgoCD prune/replace, manual kubectl delete, etc.), the
+# underlying volume and its data survive instead of being wiped, and can be
+# manually rebound.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-path-retain
+provisioner: rancher.io/local-path
+reclaimPolicy: Retain
+volumeBindingMode: WaitForFirstConsumer
