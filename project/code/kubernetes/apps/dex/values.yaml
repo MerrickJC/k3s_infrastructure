@@ -57,7 +57,7 @@ config:
       secretEnv: JENKINS_DEX_CLIENT_SECRET
     - id: zot
       redirectURIs:
-        - 'https://registry.merrickcampbell.au/zot/auth/callback/oidc'
+        - 'https://registry.direct.merrickcampbell.au/zot/auth/callback/oidc'
       name: 'Zot Registry'
       secretEnv: ZOT_DEX_CLIENT_SECRET
     - id: argo-workflows
