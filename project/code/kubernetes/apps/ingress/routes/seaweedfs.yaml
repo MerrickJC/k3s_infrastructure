@@ -1,0 +1,17 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: seaweedfs-s3-route
+  namespace: seaweedfs
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`seaweedfs-s3.direct.merrickcampbell.au`)
+      kind: Rule
+      services:
+        - name: seaweedfs-all-in-one
+          port: 9000
+
+  tls:
+    secretName: wildcard-merrickcampbell-tls

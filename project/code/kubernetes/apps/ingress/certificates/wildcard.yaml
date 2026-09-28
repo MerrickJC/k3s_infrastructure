@@ -25,5 +25,5 @@ spec:
   secretTemplate:
     annotations:
       reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
-      reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "zot"
+      reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "zot,seaweedfs"
       reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
