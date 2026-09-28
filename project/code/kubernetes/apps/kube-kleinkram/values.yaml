@@ -14,18 +14,43 @@ config:
   # Port/database name already match the chart's defaults (5432 / kleinkram)
   dbHost: postgres-rw.postgresql.svc.cluster.local
 
-  # TODO: create the 'kleinkram' database/role in apps/postgresql/
-
   frontendUrl: 'https://kleinkram.merrickcampbell.au'
   docsUrl: 'https://docs.kleinkram.merrickcampbell.au'
   backendUrl: 'https://api.kleinkram.merrickcampbell.au'
 
+  # TODO: this is mock auth for testing, replace with real auth later
+  vitePublicOauthFake: 'true'
+
 observability:
   prometheusUrl: 'http://kube-prometheus-stack-prometheus.observability.svc:9090'
 
+secretNames:
+  # Also used directly by Postgres, so this is the same Secret it is authenticated
+  # against
+  db: kleinkram-postgres-credentials
+  # kleinkram-backend SeaweedFS identity has full access to the buckets this app uses
+  s3: kleinkram-backend-s3-credentials
+
+secretKeys:
+  db:
+    user: username
+    password: password
+  s3:
+    accessKey: AWS_ACCESS_KEY_ID
+    secretKey: AWS_SECRET_ACCESS_KEY
+    user: AWS_ACCESS_KEY_ID
+    password: AWS_SECRET_ACCESS_KEY
+
+# Dedicated SeaweedFS identity for ephemeral Action's Argo Workflow to upload 
+# artifacts. kleinkram-artifact-repository ConfigMap (uses chart default name
+# so isn't overwritten) lives at apps/kube-kleinkram/artifact-repository-configmap.yaml
+argo:
+  artifactRepository:
+    credentialsSecretName: kleinkram-artifact-s3-credentials
+    credentialsSecretKeys:
+      accessKey: AWS_ACCESS_KEY_ID
+      secretKey: AWS_SECRET_ACCESS_KEY
+
 # TODO:
-#   - secretNames.* (db/s3/jwt/googleOauth/githubOauth/googleServiceAccount):
-#     none of these Secrets exist yet in this cluster.
-#   - argo.artifactRepository.credentialsSecretName /
-#     kleinkram-artifact-repository ConfigMap: neither exists yet.
-#   - setup ingress: left disabled (default)
+#   - secretNames.googleOauth/githubOauth/googleServiceAccount: none of
+#     these Secrets exist yet

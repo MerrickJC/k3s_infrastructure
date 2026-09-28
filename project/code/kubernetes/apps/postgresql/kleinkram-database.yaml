@@ -1,0 +1,25 @@
+---
+# Dedicated role + database for kube-kleinkram's backend.
+apiVersion: postgresql.cnpg.io/v1
+kind: DatabaseRole
+metadata:
+  name: kleinkram
+spec:
+  cluster:
+    name: postgres
+  name: kleinkram
+  login: true
+  databaseRoleReclaimPolicy: retain
+  passwordSecret:
+    name: kleinkram-postgres-credentials
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: kleinkram
+spec:
+  name: kleinkram
+  owner: kleinkram
+  cluster:
+    name: postgres
+  databaseReclaimPolicy: retain
