@@ -5,14 +5,13 @@ metadata:
   namespace: zot
 spec:
   entryPoints:
-    - web         # TODO: change to websecure when you need TLS encryption
+    - websecure
   routes:
-    - match: Host(`registry.merrickcampbell.au`)
+    - match: Host(`registry.direct.merrickcampbell.au`)
       kind: Rule
       services:
         - name: zot
           port: 5000
 
-  ## TODO: Uncomment when you need TLS encryption (e.g. when access directly and not through cloudflare tunnel)
-  # tls:
-  #   secretName: zot-tls
+  tls:
+    secretName: wildcard-merrickcampbell-tls

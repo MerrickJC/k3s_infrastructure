@@ -8,6 +8,16 @@ spec:
     privateKeySecretRef:
       name: letsencrypt-prod-account-key
     solvers:
+    # DNS-01 via Cloudflare for merrickcampbell.au
+    - selector:
+        dnsZones:
+          - merrickcampbell.au
+      dns01:
+        cloudflare:
+          apiTokenSecretRef:
+            name: cloudflare-api-token
+            key: api-token
+    # Fallback for any domain outside the Cloudflare zone above.
     - http01:
         ingress:
           ingressClassName: traefik

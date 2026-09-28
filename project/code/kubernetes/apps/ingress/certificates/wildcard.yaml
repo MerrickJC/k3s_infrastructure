@@ -1,0 +1,29 @@
+# Shared wildcard certificate for services accessed directly and not
+# via the cloudflare-tunnel, since it already terminates TLS. Covers
+# both the bare *.merrickcampbell.au subdomains and the one-level-deeper
+# *.direct.merrickcampbell.au subdomains (a single-level wildcard SAN does
+# not match two labels deep, so both are listed explicitly)
+#
+# The resulting Secret is reflected into any namespace listed in
+# reflection-allowed-namespaces below. Add a namespace to the reflection
+# annotation as a comma-separated list when a new direct-access service
+# needs this cert, then reference secretName: wildcard-merrickcampbell-tls
+# from its IngressRoute's tls block
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-merrickcampbell-tls
+  namespace: cert-manager
+spec:
+  secretName: wildcard-merrickcampbell-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - "*.merrickcampbell.au"
+    - "*.direct.merrickcampbell.au"
+  secretTemplate:
+    annotations:
+      reflector.v1.k8s.emberstack.com/reflection-allowed: "true"
+      reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces: "zot"
+      reflector.v1.k8s.emberstack.com/reflection-auto-enabled: "true"
