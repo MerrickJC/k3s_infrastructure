@@ -14,7 +14,7 @@ metadata:
   namespace: secrets
   annotations:
     secret-generator.v1.mittwald.de/autogenerate: TOKEN
-    secret-generator.v1.mittwald.de/encoding: base64
+    secret-generator.v1.mittwald.de/encoding: base32
     secret-generator.v1.mittwald.de/length: "32"
 type: Opaque
 ```
