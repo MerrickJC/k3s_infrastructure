@@ -8,7 +8,14 @@ service:
   type: ClusterIP   # chart default is NodePort but we use Traefik IngressRoute instead
   port: 5000
 
-persistence: false   # all blob data lives in the zot-registry S3 bucket, no local PVC needed
+# Persists Zot's metaDB search/catalog index, per-user starred/bookmarked repos,
+# vulnerability/signature cache, etc. Blob/manifest data is persisted by SeaweedFS
+# independent of this and is not covered by Zot's persistence, but the catalog is
+# wiped on every restart without this
+persistence: true
+
+pvc:
+  storageClassName: local-path
 
 ingress:
   enabled: false      # don't use chart default, create our own IngressRoute
