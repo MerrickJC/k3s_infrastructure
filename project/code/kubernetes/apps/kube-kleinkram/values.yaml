@@ -25,8 +25,8 @@ config:
   docsUrl: 'https://kleinkram-docs.merrickcampbell.au'
   backendUrl: 'https://kleinkram-api.merrickcampbell.au'
 
-  # TODO: this is mock auth for testing, replace with real auth later
-  vitePublicOauthFake: 'true'
+  oidcIssuerUrl: 'dex.merrickcampbell.au'
+  oidcDisplayName: 'Dex'
 
 observability:
   prometheusUrl: 'http://kube-prometheus-stack-prometheus.observability.svc:9090'
@@ -42,6 +42,8 @@ secretNames:
   # use the chart's defaults
   githubOauth: dex-github-oauth
 
+  oidcOauth: kleinkram-dex-client-secret
+
 secretKeys:
   db:
     user: username
@@ -51,6 +53,9 @@ secretKeys:
     secretKey: AWS_SECRET_ACCESS_KEY
     user: AWS_ACCESS_KEY_ID
     password: AWS_SECRET_ACCESS_KEY
+  oidcOauth:
+    clientId: KLEINKRAM_DEX_CLIENT_ID
+    clientSecret: KLEINKRAM_DEX_CLIENT_SECRET
 
 # Dedicated SeaweedFS identity for ephemeral Action's Argo Workflow to upload 
 # artifacts. kleinkram-artifact-repository ConfigMap (uses chart default name
