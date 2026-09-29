@@ -1,6 +1,10 @@
 # Only keys that differ from the chart's defaults are listed.
 # Anything not mentioned here uses the chart's default as-is.
 
+# Lets apps/reloader restart any Deployment whose mounted Secret/ConfigMap changes
+commonAnnotations:
+  reloader.stakater.com/auto: 'true'
+
 image:
   # Pull from our private Zot registry
   pullSecrets:
