@@ -7,7 +7,10 @@ image:
     - zot-pull-secret
   
 config:
-  s3Endpoint: 'http://seaweedfs-all-in-one.seaweedfs.svc.cluster.local:9000'
+  # Externally reachable ingress
+  s3Endpoint: 'https://seaweedfs-s3.direct.merrickcampbell.au'
+  # Internal address
+  s3EndpointInternal: 'http://seaweedfs-all-in-one.seaweedfs.svc.cluster.local:9000'
   s3DataBucketName: data
   s3DbBucketName: dbdumps
 
@@ -50,7 +53,3 @@ argo:
     credentialsSecretKeys:
       accessKey: AWS_ACCESS_KEY_ID
       secretKey: AWS_SECRET_ACCESS_KEY
-
-# TODO:
-#   - secretNames.googleOauth/githubOauth/googleServiceAccount: none of
-#     these Secrets exist yet
