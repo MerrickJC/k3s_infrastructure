@@ -33,6 +33,10 @@ secretNames:
   db: kleinkram-postgres-credentials
   # kleinkram-backend SeaweedFS identity has full access to the buckets this app uses
   s3: kleinkram-backend-s3-credentials
+  # Reuses the same GitHub OAuth App credentials as Dex as a temporary workaround
+  # until full OIDC support is added (so that Dex can be used). secretKeys.githubOauth
+  # use the chart's defaults
+  githubOauth: dex-github-oauth
 
 secretKeys:
   db:
