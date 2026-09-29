@@ -25,7 +25,7 @@ config:
   docsUrl: 'https://kleinkram-docs.merrickcampbell.au'
   backendUrl: 'https://kleinkram-api.merrickcampbell.au'
 
-  oidcIssuerUrl: 'dex.merrickcampbell.au'
+  oidcIssuerUrl: 'https://dex.merrickcampbell.au'
   oidcDisplayName: 'Dex'
 
 observability:
