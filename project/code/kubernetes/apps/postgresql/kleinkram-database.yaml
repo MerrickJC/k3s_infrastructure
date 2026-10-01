@@ -23,3 +23,23 @@ spec:
   cluster:
     name: postgres
   databaseReclaimPolicy: retain
+---
+# Low-privilege, read-only role for kube-kleinkram's db-dump CronJob
+#
+# pg_read_all_data is Postgres's built-in predefined role granting SELECT on
+# every table/view/sequence in every schema of every database in the
+# cluster (there's no coarser built-in role scoped to a single database)
+apiVersion: postgresql.cnpg.io/v1
+kind: DatabaseRole
+metadata:
+  name: kleinkram-dbdump
+spec:
+  cluster:
+    name: postgres
+  name: kleinkram_dbdump
+  login: true
+  inRoles:
+    - pg_read_all_data
+  databaseRoleReclaimPolicy: retain
+  passwordSecret:
+    name: kleinkram-db-dump-credentials

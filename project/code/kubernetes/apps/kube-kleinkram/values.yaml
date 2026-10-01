@@ -56,6 +56,9 @@ secretKeys:
   oidcOauth:
     clientId: KLEINKRAM_DEX_CLIENT_ID
     clientSecret: KLEINKRAM_DEX_CLIENT_SECRET
+  dbDump:
+    user: username
+    password: password
 
 # Dedicated SeaweedFS identity for ephemeral Action's Argo Workflow to upload 
 # artifacts. kleinkram-artifact-repository ConfigMap (uses chart default name
