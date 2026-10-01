@@ -13,6 +13,8 @@ envFrom:
       name: argo-workflows-dex-client-secret
   - secretRef:
       name: grafana-dex-client-secret
+  - secretRef:
+      name: kleinkram-dex-client-secret
 
 # Restarts the pod when any of the envFrom secrets above change
 deploymentAnnotations:
