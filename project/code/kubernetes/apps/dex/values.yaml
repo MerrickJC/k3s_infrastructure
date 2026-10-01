@@ -74,7 +74,7 @@ config:
       redirectURIs:
         - 'https://kleinkram-api.merrickcampbell.au/auth/oidc/callback'
       name: 'Kleinkram'
-      secretEnv: ARGO_WORKFLOWS_DEX_CLIENT_SECRET
+      secretEnv: KLEINKRAM_DEX_CLIENT_SECRET
 
   connectors:
   - type: github
