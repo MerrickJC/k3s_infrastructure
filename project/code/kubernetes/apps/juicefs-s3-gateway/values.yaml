@@ -1,0 +1,20 @@
+# Only keys that differ from the chart's defaults are listed.
+# Anything not mentioned here uses the chart's default as-is.
+
+# Predictable Service DNS (juicefs-s3-gateway.juicefs.svc.cluster.local)
+# instead of a release-name-derived fullname
+fullnameOverride: juicefs-s3-gateway
+
+# Instead of hard-coding secrets into the values.yaml we use secrets/juicefs-gateway-secret-job.yaml
+# to pre-creates the same literally-named `juicefs-secret` Secret instead
+secret:
+  enabled: false
+
+# Exposes each top-level directory of the JuiceFS filesystem as its own S3
+# bucket (data/dbdumps/action-artifacts), so this one gateway/filesystem can
+# back all of kleinkram's buckets. See README.md for the IAM users layered
+# on top via secrets/juicefs-gateway-iam-job.yaml
+options: '--multi-buckets'
+
+service:
+  type: ClusterIP

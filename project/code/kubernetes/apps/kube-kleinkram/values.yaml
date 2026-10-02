@@ -11,10 +11,11 @@ image:
     - zot-pull-secret
   
 config:
-  # Externally reachable ingress
-  s3Endpoint: 'https://seaweedfs-s3.direct.merrickcampbell.au'
+  # Externally reachable ingress. Backed by the JuiceFS S3 Gateway
+  # (apps/juicefs-s3-gateway)
+  s3Endpoint: 'https://juicefs-s3.direct.merrickcampbell.au'
   # Internal address
-  s3EndpointInternal: 'http://seaweedfs-all-in-one.seaweedfs.svc.cluster.local:9000'
+  s3EndpointInternal: 'http://juicefs-s3-gateway.juicefs.svc.cluster.local:9000'
   s3DataBucketName: data
   s3DbBucketName: dbdumps
 
@@ -35,8 +36,9 @@ secretNames:
   # Also used directly by Postgres, so this is the same Secret it is authenticated
   # against
   db: kleinkram-postgres-credentials
-  # kleinkram-backend SeaweedFS identity has full access to the buckets this app uses
-  s3: kleinkram-backend-s3-credentials
+  # JuiceFS S3 Gateway IAM user with readwrite access to every bucket (see
+  # apps/juicefs-s3-gateway/README.md)
+  s3: kleinkram-juicefs-credentials
   # Reuses the same GitHub OAuth App credentials as Dex as a temporary workaround
   # until full OIDC support is added (so that Dex can be used). secretKeys.githubOauth
   # use the chart's defaults
@@ -60,12 +62,13 @@ secretKeys:
     user: username
     password: password
 
-# Dedicated SeaweedFS identity for ephemeral Action's Argo Workflow to upload 
-# artifacts. kleinkram-artifact-repository ConfigMap (uses chart default name
-# so isn't overwritten) lives at apps/kube-kleinkram/artifact-repository-configmap.yaml
+# Dedicated JuiceFS S3 Gateway IAM user (apps/juicefs-s3-gateway/README.md),
+# scoped to only the action-artifacts bucket, for ephemeral Action's Argo
+# Workflow to upload artifacts. kleinkram-artifact-repository ConfigMap is
+# chart-rendered and picks up config.s3EndpointInternal above automatically
 argo:
   artifactRepository:
-    credentialsSecretName: kleinkram-artifact-s3-credentials
+    credentialsSecretName: kleinkram-juicefs-artifacts-credentials
     credentialsSecretKeys:
       accessKey: AWS_ACCESS_KEY_ID
       secretKey: AWS_SECRET_ACCESS_KEY
