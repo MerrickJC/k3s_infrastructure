@@ -1,5 +1,5 @@
 appName: cloudflare-tunnel
-namespace: cloudflare-tunnel
+namespace: cloudflare
 
 hasHelm: false
 hasManifests: true
