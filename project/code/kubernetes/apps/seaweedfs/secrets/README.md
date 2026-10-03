@@ -8,7 +8,7 @@
 
 This can't be produced by `secret-generator` or `SecretTemplate` alone since it requires combining two independently-generated credential pairs into one structured file. None of the tools in the cluster currently support embedding a generated Secret value inside a larger static string Secret, so it's composed by a `CronJob`:
 
-1. Every identity's leaf credentials Secret (e.g. [`apps/secrets/generated/kleinkram-backend-s3-credentials.yaml`](../../secrets/generated/kleinkram-backend-s3-credentials.yaml), [`apps/secrets/generated/zot-s3-credentials.yaml`](../../secrets/generated/zot-s3-credentials.yaml)) is generated in the `secrets` namespace and reflected into every namespace that needs it, including `seaweedfs`. `zot-s3-credentials` is also reflected into `zot` as-is for Zot's own pod to consume
+1. Every identity's leaf credentials Secret (e.g. [`apps/secrets/generated/zot-s3-credentials.yaml`](../../secrets/generated/zot-s3-credentials.yaml), [`apps/secrets/generated/argo-workflows-s3-credentials.yaml`](../../secrets/generated/argo-workflows-s3-credentials.yaml)) is generated in the `secrets` namespace and reflected into every namespace that needs it, including `seaweedfs`. `zot-s3-credentials` is also reflected into `zot` as-is for Zot's own pod to consume
 2. [`seaweedfs-s3-config-job.yaml`](./seaweedfs-s3-config-job.yaml) reads each reflected copy from its own (`seaweedfs`) namespace and writes the composed `identities` JSON directly into `seaweedfs-s3-config` in this namespace. This runs every 15 minutes.
 
 ### Why a CronJob instead of a one-shot Job
@@ -23,7 +23,7 @@ Since SeaweedFS doesn't hot-reload `-s3.config`, we use [`apps/reloader`](../../
 
 The compose script in `seaweedfs-s3-config-job.yaml` is data-driven specifically so this doesn't require editing hand-escaped JSON:
 
-1. Add a new generated credentials Secret under `apps/secrets/generated/` (copy `kleinkram-backend-s3-credentials.yaml`'s shape and use the same `secret-generator.v1.mittwald.de/autogenerate: AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY` annotations but with a different `metadata.name`), making sure `seaweedfs` is included in its `reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces` list
+1. Add a new generated credentials Secret under `apps/secrets/generated/` (copy `zot-s3-credentials.yaml`'s shape and use the same `secret-generator.v1.mittwald.de/autogenerate: AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY` annotations but with a different `metadata.name`), making sure `seaweedfs` is included in its `reflector.v1.k8s.emberstack.com/reflection-allowed-namespaces` list
 2. Add that Secret's name to the `resourceNames` list on the `seaweedfs-s3-config-builder-read` Role in `seaweedfs-s3-config-job.yaml` (RBAC is allow-listed per-secret, so a new identity needs an explicit
    grant)
 3. Add one line to the `IDENTITIES` table inside the CronJob's script: `<identity-name> <leaf-secret-name> <actions>`. There is a comment above that table for the actions syntax (unscoped vs. bucket-scoped).

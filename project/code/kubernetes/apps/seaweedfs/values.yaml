@@ -24,10 +24,6 @@ allInOne:
     existingConfigSecret: seaweedfs-s3-config
 
     createBuckets:
-      - name: data
-      - name: dbdumps
-      - name: action-artifacts
-        ttl: 90d
       - name: zot-registry   # backs the Zot container registry's S3 storage driver
       - name: argo-workflows # backs Argo Workflows' artifact repository
       - name: juicefs        # backs JuiceFS's object storage
