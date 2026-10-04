@@ -2,6 +2,9 @@
 # certs instead of the chart's default self-signed-cert Job
 enableCertManager: true
 
+# Export metrics for reading by Prometheus
+enablePrometheus: true
+
 # Argo Workflow pods are raw Pods, not batch/Job -- Kueue only intercepts them if the "pod" integration
 # framework is enabled
 managerConfig:
