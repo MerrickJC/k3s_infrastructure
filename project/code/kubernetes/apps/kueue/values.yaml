@@ -5,7 +5,7 @@ enableCertManager: true
 # Export metrics for reading by Prometheus
 enablePrometheus: true
 
-# Argo Workflow pods are raw Pods, not batch/Job -- Kueue only intercepts them if the "pod" integration
+# Argo Workflow pods are raw Pods, not batch/Job. Kueue only intercepts pods if the "pod" integration
 # framework is enabled
 managerConfig:
   controllerManagerConfigYaml: |
@@ -16,3 +16,17 @@ managerConfig:
         - pod
     waitForPodsReady:
       enable: false
+
+# KueueViz read-only dashboard (https://kueue.sigs.k8s.io/docs/tasks/manage/enable_kueueviz/)
+enableKueueViz: true
+kueueViz:
+  backend:
+    ingress:
+      enabled: false
+      # Unused for Ingress but the frontend ConfigMap template still reads these
+      # two fields to build the websocket URL the dashboard connects back to
+      host: "kueueviz.merrickcampbell.au"
+      tlsEnabled: false
+  frontend:
+    ingress:
+      enabled: false
