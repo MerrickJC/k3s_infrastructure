@@ -98,6 +98,9 @@ artifactRepository:
 executor:
   securityContext:
     runAsNonRoot: true
+    # argoexec doesn't declare a non-root USER in its image, so Kubernetes
+    # can't verify runAsNonRoot from image metadata alone
+    runAsUser: 8737
     allowPrivilegeEscalation: false
     capabilities:
       drop: ["ALL"]
