@@ -1,0 +1,49 @@
+# Shared SSO gateway, fronting every app protected by a Traefik forwardAuth Middleware (see
+# apps/oauth2-proxy/README.md). Runs purely as an auth-check endpoint, not a real reverse proxy:
+# Traefik calls /oauth2/auth directly for every request and, once that succeeds, still forwards
+# the original request straight to the protected app's own Service
+config:
+  # client-id/client-secret/cookie-secret are wired up via extraEnv below instead, pulled
+  # straight from the generated secrets
+  requiredSecretKeys: []
+
+# client-id and client-secret come from apps/secrets/generated/dex-oauth2-proxy-client-token.yaml
+# (shared with Dex, reflected into this namespace). cookie-secret is this app's own
+# apps/secrets/generated/oauth2-proxy-cookie-secret.yaml
+extraEnv:
+  - name: OAUTH2_PROXY_CLIENT_ID
+    valueFrom:
+      secretKeyRef:
+        name: oauth2-proxy-dex-client-secret
+        key: client-id
+  - name: OAUTH2_PROXY_CLIENT_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: oauth2-proxy-dex-client-secret
+        key: client-secret
+  - name: OAUTH2_PROXY_COOKIE_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: oauth2-proxy-cookie-secret
+        key: cookie-secret
+
+extraArgs:
+  provider: oidc
+  oidc-issuer-url: https://dex.merrickcampbell.au
+  # No fixed redirect-url: oauth2-proxy derives the OAuth callback from each request's own
+  # Host header instead, so adding this to new IngressRoutes does not require any changes
+  # in this configuration. Each host still needs its own entry in Dex's redirectURIs
+  # allowlist though
+  whitelist-domain: .merrickcampbell.au
+  # One login covers every app behind this oauth2-proxy instance (shared SSO), rather than a
+  # separate session per protected host.
+  cookie-domain: .merrickcampbell.au
+  email-domain: "*"
+  # The browser sees https
+  cookie-secure: "true"
+  # Trust X-Forwarded-* from Traefik so oauth2-proxy sees the real client IP/scheme
+  reverse-proxy: "true"
+
+# Restarts the pod when the Dex client secret or cookie secret change
+deploymentAnnotations:
+  reloader.stakater.com/auto: "true"

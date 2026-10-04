@@ -16,7 +16,18 @@ envFrom:
   - secretRef:
       name: kleinkram-dex-client-secret
 
-# Restarts the pod when any of the envFrom secrets above change
+# oauth2-proxy-dex-client-secret can't go through envFrom above: its key is lower-hyphenated
+# (client-secret) to double as oauth2-proxy's config.existingSecret, and envFrom requires every
+# key to already be a valid env var name. envVars lets us point an arbitrary env var name at an
+# arbitrary secret key instead.
+envVars:
+  - name: OAUTH2_PROXY_DEX_CLIENT_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: oauth2-proxy-dex-client-secret
+        key: client-secret
+
+# Restarts the pod when any of the envFrom/envVars secrets above change
 deploymentAnnotations:
   reloader.stakater.com/auto: "true"
 
@@ -77,6 +88,14 @@ config:
         - 'https://kleinkram-api.merrickcampbell.au/auth/oidc/callback'
       name: 'Kleinkram'
       secretEnv: KLEINKRAM_DEX_CLIENT_SECRET
+    # Single shared client for every app fronted by apps/oauth2-proxy. Add a new app's own
+    # `https://<host>/oauth2/callback` to redirectURIs below when protecting it. See
+    # apps/oauth2-proxy/README.md for details
+    - id: oauth2-proxy
+      redirectURIs:
+        - 'https://kueueviz.merrickcampbell.au/oauth2/callback'
+      name: 'oauth2-proxy (SSO gateway)'
+      secretEnv: OAUTH2_PROXY_DEX_CLIENT_SECRET
 
   connectors:
   - type: github

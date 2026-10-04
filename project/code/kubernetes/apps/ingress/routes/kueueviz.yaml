@@ -1,3 +1,40 @@
+# This file is the reference example for protecting an app with the shared apps/oauth2-proxy
+# SSO gateway -- see apps/oauth2-proxy/README.md for the full "protect a new app" runbook.
+
+# ExternalName alias so this kueue-system IngressRoute can target oauth2-proxy's Service
+# (apps/oauth2-proxy, namespace oauth2-proxy) without enabling Traefik's allowCrossNamespace
+# provider option cluster-wide. Traefik requires a Service reference to live in the same
+# namespace as the IngressRoute unless that option is set. Every protected app needs its own
+# copy of this alias, in its own namespace.
+apiVersion: v1
+kind: Service
+metadata:
+  name: oauth2-proxy-external
+  namespace: kueue-system
+spec:
+  type: ExternalName
+  externalName: oauth2-proxy.oauth2-proxy.svc.cluster.local
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: kueueviz-oauth2-auth
+  namespace: kueue-system
+spec:
+  forwardAuth:
+    # Raw address, not a Service reference since Traefik calls this directly, so no
+    # cross-namespace restriction applies here regardless of the ExternalName trick above.
+    # Identical for every protected app since oauth2-proxy is one shared instance.
+    address: http://oauth2-proxy.oauth2-proxy.svc.cluster.local/oauth2/auth
+    trustForwardHeader: true
+    authResponseHeaders:
+      - X-Auth-Request-User
+      - X-Auth-Request-Email
+    # Without this, an unauthenticated request gets a 401 error from oauth2-proxy's
+    # /oauth2/auth check. With it, Traefik turns that 401 into a real redirect to the login
+    # flow for browser-facing requests
+    authSigninURL: /oauth2/start
+---
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
@@ -7,15 +44,26 @@ spec:
   entryPoints:
     - web         # TODO: change to websecure when you need TLS encryption
   routes:
-    # Paths the frontend calls directly (WebSocket updates, REST API, auth probe) must reach the
-    # backend; matched first since Traefik would otherwise fall through to the frontend's `/`.
+    # oauth2-proxy's own endpoints (login redirect, callback, sign-out) must bypass the auth
+    # middleware entirely, otherwise login could never complete
+    - match: Host(`kueueviz.merrickcampbell.au`) && PathPrefix(`/oauth2`)
+      kind: Rule
+      services:
+        - name: oauth2-proxy-external
+          port: 80
+    # Paths the frontend calls directly (WebSocket updates, REST API, auth probe) must reach
+    # the backend; matched before the frontend's catch-all `/`
     - match: Host(`kueueviz.merrickcampbell.au`) && (PathPrefix(`/ws`) || PathPrefix(`/api`) || PathPrefix(`/auth`))
       kind: Rule
+      middlewares:
+        - name: kueueviz-oauth2-auth
       services:
         - name: kueue-kueueviz-backend
           port: 8080
     - match: Host(`kueueviz.merrickcampbell.au`)
       kind: Rule
+      middlewares:
+        - name: kueueviz-oauth2-auth
       services:
         - name: kueue-kueueviz-frontend
           port: 8080

@@ -1,0 +1,10 @@
+appName: oauth2-proxy
+namespace: oauth2-proxy
+
+hasHelm: true
+hasManifests: true
+
+helm:
+  repoURL: https://oauth2-proxy.github.io/manifests
+  chart: oauth2-proxy
+  targetRevision: 10.7.1
