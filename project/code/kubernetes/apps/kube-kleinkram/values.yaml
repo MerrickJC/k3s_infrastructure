@@ -29,6 +29,8 @@ config:
   oidcIssuerUrl: 'https://dex.merrickcampbell.au'
   oidcDisplayName: 'Dex'
 
+  dockerHubNamespace: ""
+
 observability:
   prometheusUrl: 'http://kube-prometheus-stack-prometheus.observability.svc:9090'
 
