@@ -23,10 +23,11 @@ kueueViz:
   backend:
     ingress:
       enabled: false
-      # Unused for Ingress but the frontend ConfigMap template still reads these
-      # two fields to build the websocket URL the dashboard connects back to
+      # Unused for Ingress but the frontend ConfigMap template still reads these two fields to
+      # build the websocket/API URL the dashboard connects back to. tlsEnabled must be true
+      # since we're using TLS between frontend and backend, otherwise frontend makes http requests
       host: "kueueviz.merrickcampbell.au"
-      tlsEnabled: false
+      tlsEnabled: true
   frontend:
     ingress:
       enabled: false
