@@ -1,20 +1,7 @@
 # This file is the reference example for protecting an app with the shared apps/oauth2-proxy
 # SSO gateway -- see apps/oauth2-proxy/README.md for the full "protect a new app" runbook.
-
-# ExternalName alias so this kueue-system IngressRoute can target oauth2-proxy's Service
-# (apps/oauth2-proxy, namespace oauth2-proxy) without enabling Traefik's allowCrossNamespace
-# provider option cluster-wide. Traefik requires a Service reference to live in the same
-# namespace as the IngressRoute unless that option is set. Every protected app needs its own
-# copy of this alias, in its own namespace.
-apiVersion: v1
-kind: Service
-metadata:
-  name: oauth2-proxy-external
-  namespace: kueue-system
-spec:
-  type: ExternalName
-  externalName: oauth2-proxy.oauth2-proxy.svc.cluster.local
----
+# Everything below except the IngressRoute's own backend/frontend service names is a
+# copy-paste template: only `metadata.namespace` and the Host in `match` need to change per app.
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -23,16 +10,16 @@ metadata:
 spec:
   forwardAuth:
     # Raw address, not a Service reference since Traefik calls this directly, so no
-    # cross-namespace restriction applies here regardless of the ExternalName trick above.
-    # Identical for every protected app since oauth2-proxy is one shared instance.
+    # cross-namespace restriction applies here regardless of namespace. Identical for every
+    # protected app since oauth2-proxy is one shared instance.
     address: http://oauth2-proxy.oauth2-proxy.svc.cluster.local/oauth2/auth
     trustForwardHeader: true
     authResponseHeaders:
       - X-Auth-Request-User
       - X-Auth-Request-Email
-    # Without this, an unauthenticated request gets a 401 error from oauth2-proxy's
+    # Without this, an unauthenticated request just gets a bare 401 from oauth2-proxy's
     # /oauth2/auth check. With it, Traefik turns that 401 into a real redirect to the login
-    # flow for browser-facing requests
+    # flow for browser-facing requests.
     authSigninURL: /oauth2/start
 ---
 apiVersion: traefik.io/v1alpha1
@@ -45,14 +32,19 @@ spec:
     - web         # TODO: change to websecure when you need TLS encryption
   routes:
     # oauth2-proxy's own endpoints (login redirect, callback, sign-out) must bypass the auth
-    # middleware entirely, otherwise login could never complete
+    # middleware below entirely, otherwise login could never complete. Every protected app
+    # needs this same route, with its own Host. Cross-namespace service reference requires
+    # providers.kubernetesCRD.allowCrossNamespace (apps/traefik/manifest.yaml).
     - match: Host(`kueueviz.merrickcampbell.au`) && PathPrefix(`/oauth2`)
       kind: Rule
       services:
-        - name: oauth2-proxy-external
+        - name: oauth2-proxy
+          namespace: oauth2-proxy
           port: 80
     # Paths the frontend calls directly (WebSocket updates, REST API, auth probe) must reach
-    # the backend; matched before the frontend's catch-all `/`
+    # the backend; matched before the frontend's catch-all `/`. The forwardAuth middleware
+    # relies on the browser sending oauth2-proxy's session cookie, which it does automatically
+    # since these are all same-origin requests.
     - match: Host(`kueueviz.merrickcampbell.au`) && (PathPrefix(`/ws`) || PathPrefix(`/api`) || PathPrefix(`/auth`))
       kind: Rule
       middlewares:

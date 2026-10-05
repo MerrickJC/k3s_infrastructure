@@ -10,3 +10,11 @@ spec:
         level: DEBUG
       access:
         enabled: true
+    # Lets an IngressRoute's services/middlewares explicitly reference a Service or
+    # Middleware in a different namespace via a `namespace:` field (same-namespace is 
+    # always allowed). Needed so apps/ingress/routes/*.yaml can target the single
+    # shared apps/oauth2-proxy Service from each protected app's own namespace. see
+    # apps/oauth2-proxy/README.md for more details
+    providers:
+      kubernetesCRD:
+        allowCrossNamespace: true
