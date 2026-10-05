@@ -1,0 +1,12 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: juicefs-s3-gateway-metrics
+  namespace: juicefs
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: juicefs-s3-gateway
+  endpoints:
+    - port: metrics
+      path: /metrics
