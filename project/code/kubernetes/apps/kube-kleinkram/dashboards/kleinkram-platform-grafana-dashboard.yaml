@@ -305,8 +305,19 @@ data:
         },
         {
           "datasource": null,
-          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "max": 1, "min": 0, "unit": "percentunit" }, "overrides": [] },
+          "description": "Local FUSE blockcache held by each mount pod, broken down by the node it's scheduled on (relabeled from __meta_kubernetes_pod_node_name in apps/juicefs/observability.yaml) - how much already-fetched data each node is keeping around to avoid re-fetching from the object store.",
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 8, "x": 16, "y": 40 },
+          "id": 406,
+          "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [ { "expr": "sum(juicefs_blockcache_bytes) by (node, vol_name)", "legendFormat": "{{node}} ({{vol_name}})", "refId": "A" } ],
+          "title": "Cache Usage by Node",
+          "type": "timeseries"
+        },
+        {
+          "datasource": null,
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "max": 1, "min": 0, "unit": "percentunit" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 48 },
           "id": 403,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "sum(rate(juicefs_blockcache_hits[5m])) by (vol_name) / (sum(rate(juicefs_blockcache_hits[5m])) by (vol_name) + sum(rate(juicefs_blockcache_miss[5m])) by (vol_name))", "legendFormat": "{{vol_name}}", "refId": "A" } ],
@@ -316,7 +327,7 @@ data:
         {
           "datasource": null,
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 48 },
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 48 },
           "id": 404,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "sum(rate(juicefs_object_request_errors[5m])) by (vol_name)", "legendFormat": "{{vol_name}}", "refId": "A" } ],
@@ -325,21 +336,57 @@ data:
         },
         {
           "datasource": null,
+          "description": "Actual bytes JuiceFS has to fetch from/push to the object store backend (JuiceFS S3 Gateway -> SeaweedFS) - i.e. real network traffic, as opposed to FUSE Read/Write Throughput below which includes data served straight from local cache. A big gap between this panel and FUSE throughput means the cache is doing its job.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "Bps" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 48 },
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 48 },
+          "id": 407,
+          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [
+            { "expr": "sum(rate(juicefs_object_request_data_bytes{method=\"GET\"}[5m])) by (vol_name)", "legendFormat": "{{vol_name}} download", "refId": "A" },
+            { "expr": "sum(rate(juicefs_object_request_data_bytes{method=\"PUT\"}[5m])) by (vol_name)", "legendFormat": "{{vol_name}} upload", "refId": "B" }
+          ],
+          "title": "Network Transfer Rate to Object Store",
+          "type": "timeseries"
+        },
+        {
+          "datasource": null,
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "Bps" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 56 },
           "id": 405,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [
             { "expr": "sum(rate(juicefs_fuse_read_size_bytes_sum[5m])) by (vol_name)", "legendFormat": "{{vol_name}} read", "refId": "A" },
             { "expr": "sum(rate(juicefs_fuse_written_size_bytes_sum[5m])) by (vol_name)", "legendFormat": "{{vol_name}} write", "refId": "B" }
           ],
-          "title": "FUSE Read/Write Throughput",
+          "title": "FUSE Read/Write Throughput (total app traffic, cache + network)",
           "type": "timeseries"
+        },
+        {
+          "datasource": null,
+          "description": "Total bytes downloaded from the object store over the dashboard's selected time range - the actual network cost of cache misses.",
+          "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 6, "x": 12, "y": 56 },
+          "id": 408,
+          "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "center", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+          "targets": [ { "expr": "sum(increase(juicefs_object_request_data_bytes{method=\"GET\"}[$__range]))", "refId": "A" } ],
+          "title": "Downloaded from Object Store (range)",
+          "type": "stat"
+        },
+        {
+          "datasource": null,
+          "description": "Total bytes uploaded to the object store over the dashboard's selected time range.",
+          "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 6, "x": 18, "y": 56 },
+          "id": 409,
+          "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "center", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+          "targets": [ { "expr": "sum(increase(juicefs_object_request_data_bytes{method=\"PUT\"}[$__range]))", "refId": "A" } ],
+          "title": "Uploaded to Object Store (range)",
+          "type": "stat"
         },
 
         {
           "collapsed": false,
-          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 56 },
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 64 },
           "id": 500,
           "panels": [],
           "title": "SeaweedFS",
@@ -349,7 +396,7 @@ data:
           "datasource": null,
           "description": "Backs zot-registry, argo-workflows and juicefs buckets. Needs global.seaweedfs.monitoring.enabled: true (apps/seaweedfs/values.yaml).",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 57 },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 65 },
           "id": 501,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "SeaweedFS_s3_bucket_size_bytes", "legendFormat": "{{bucket}}", "refId": "A" } ],
@@ -359,7 +406,7 @@ data:
         {
           "datasource": null,
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 57 },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 65 },
           "id": 502,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "SeaweedFS_s3_bucket_object_count", "legendFormat": "{{bucket}}", "refId": "A" } ],
@@ -369,7 +416,7 @@ data:
         {
           "datasource": null,
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 65 },
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 73 },
           "id": 503,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "sum(SeaweedFS_volumeServer_total_disk_size) by (collection, type)", "legendFormat": "{{collection}} ({{type}})", "refId": "A" } ],
@@ -379,7 +426,7 @@ data:
         {
           "datasource": null,
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 65 },
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 73 },
           "id": 504,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [
@@ -392,17 +439,53 @@ data:
         {
           "datasource": null,
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "reqps" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 65 },
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 73 },
           "id": 505,
           "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "sum(rate(SeaweedFS_s3_request_total[5m])) by (type, code)", "legendFormat": "{{type}} ({{code}})", "refId": "A" } ],
           "title": "S3 Request Rate",
           "type": "timeseries"
         },
+        {
+          "datasource": null,
+          "description": "Real network bytes in/out of each S3 bucket (SeaweedFS_s3_bucket_traffic_*_bytes_total) - this is the actual data SeaweedFS is moving for Kleinkram, as opposed to Bucket Logical Size above which is data at rest.",
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "Bps" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 81 },
+          "id": 506,
+          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [
+            { "expr": "sum(rate(SeaweedFS_s3_bucket_traffic_received_bytes_total[5m])) by (bucket)", "legendFormat": "{{bucket}} in", "refId": "A" },
+            { "expr": "sum(rate(SeaweedFS_s3_bucket_traffic_sent_bytes_total[5m])) by (bucket)", "legendFormat": "{{bucket}} out", "refId": "B" }
+          ],
+          "title": "Network Transfer Rate (S3 Buckets)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": null,
+          "description": "Total bytes received into S3 buckets over the dashboard's selected time range.",
+          "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 6, "x": 12, "y": 81 },
+          "id": 507,
+          "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "center", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+          "targets": [ { "expr": "sum(increase(SeaweedFS_s3_bucket_traffic_received_bytes_total[$__range]))", "refId": "A" } ],
+          "title": "Received (range)",
+          "type": "stat"
+        },
+        {
+          "datasource": null,
+          "description": "Total bytes sent out of S3 buckets over the dashboard's selected time range.",
+          "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 6, "x": 18, "y": 81 },
+          "id": 508,
+          "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "center", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+          "targets": [ { "expr": "sum(increase(SeaweedFS_s3_bucket_traffic_sent_bytes_total[$__range]))", "refId": "A" } ],
+          "title": "Sent (range)",
+          "type": "stat"
+        },
 
         {
           "collapsed": false,
-          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 73 },
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 89 },
           "id": 600,
           "panels": [],
           "title": "PostgreSQL (CNPG)",
@@ -412,7 +495,7 @@ data:
           "datasource": null,
           "description": "VERIFY: exact cnpg_collector_* metric name for database size wasn't confirmed from docs alone - check the postgres pod's :9187/metrics output once the new PodMonitor (apps/postgresql/observability.yaml) is live and correct this query if needed.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 74 },
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 90 },
           "id": 601,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "cnpg_collector_pg_database_size_bytes", "legendFormat": "{{datname}}", "refId": "A" } ],
@@ -423,7 +506,7 @@ data:
           "datasource": null,
           "description": "VERIFY: exact cnpg_collector_* metric name for backend/connection count wasn't confirmed from docs alone.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 74 },
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 90 },
           "id": 602,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "cnpg_collector_pg_stat_activity_count", "legendFormat": "{{datname}}", "refId": "A" } ],
@@ -433,7 +516,7 @@ data:
         {
           "datasource": null,
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 74 },
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 90 },
           "id": 603,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "cnpg_collector_pg_wal", "legendFormat": "{{value}}", "refId": "A" } ],
