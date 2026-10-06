@@ -9,7 +9,12 @@ image:
   # Pull from our private Zot registry
   pullSecrets:
     - zot-pull-secret
-  
+
+# Action images also pull from the private Zot registry
+actions:
+  imagePullSecrets:
+    - zot-pull-secret
+
 config:
   # Externally reachable ingress. Backed by the JuiceFS S3 Gateway
   # (apps/juicefs-s3-gateway)
