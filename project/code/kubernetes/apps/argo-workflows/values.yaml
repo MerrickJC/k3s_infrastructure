@@ -5,6 +5,14 @@ controller:
   # Cluster-wide controller so workflows can be submitted from any namespace
   workflowNamespaces: []
 
+  rbac:
+    # the controller reads a step's imagePullSecret via the Kubernetes
+    # API to look up the image's entrypoint/cmd when a Workflow template
+    # doesn't set `command` explicitly. zot-pull-secret is reflected
+    # into every namespace that runs images pulled from a private repo
+    secretWhitelist:
+      - zot-pull-secret
+
   workflowDefaults:
     spec:
       # Standard hygiene so finished Workflows (and their Pods) don't
