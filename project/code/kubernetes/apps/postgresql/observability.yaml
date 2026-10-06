@@ -1,0 +1,14 @@
+# scrape the cnpg_collector_* metrics every instance exports on port 9187
+# with no change needed to the CNPG Cluster
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: postgres-cnpg-metrics
+  namespace: postgresql
+spec:
+  selector:
+    matchLabels:
+      cnpg.io/cluster: postgres
+  podMetricsEndpoints:
+    - port: metrics
+      path: /metrics

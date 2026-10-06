@@ -1,3 +1,10 @@
+# Lets Prometheus discover the chart's built-in ServiceMonitor for every
+# enabled component (allInOne here, on its metricsPort)
+global:
+  seaweedfs:
+    monitoring:
+      enabled: true
+
 # individual components turned off in favour of allInOne mode
 master:
   enabled: false

@@ -20,6 +20,13 @@ controller:
   deploymentAnnotations:
     reloader.stakater.com/auto: "true"
 
+  # Exposes argo_workflows_* metrics (workflow/pod counts by phase, queue
+  # depth, operation duration)
+  metricsConfig:
+    enabled: true
+  serviceMonitor:
+    enabled: true
+
   # Uncomment to additionally archive completed Workflows to Postgres for
   # long-term/searchable history instead of relying solely on the TTLs
   # above. Needs a role/database in apps/postgresql's shared cluster and

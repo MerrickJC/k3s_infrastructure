@@ -16,6 +16,9 @@ managerConfig:
         - pod
     waitForPodsReady:
       enable: false
+    # Exports metrics
+    metrics:
+      enableClusterQueueResources: true
 
 # KueueViz read-only dashboard (https://kueue.sigs.k8s.io/docs/tasks/manage/enable_kueueviz/)
 enableKueueViz: true

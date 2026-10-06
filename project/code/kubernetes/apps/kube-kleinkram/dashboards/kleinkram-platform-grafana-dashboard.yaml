@@ -1,0 +1,455 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kleinkram-platform-grafana-dashboard
+  namespace: kleinkram
+  labels:
+    grafana_dashboard: "1"
+data:
+  kleinkram-platform-dashboard.json: |
+    {
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          }
+        ]
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "id": null,
+      "links": [],
+      "liveNow": false,
+      "panels": [
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+          "id": 100,
+          "panels": [],
+          "title": "Platform Health",
+          "type": "row"
+        },
+        {
+          "datasource": null,
+          "description": "job label regex is a best guess until confirmed against kubectl get servicemonitor,podmonitor -A on a live cluster",
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [
+                { "options": { "0": { "text": "Down", "color": "red" }, "1": { "text": "Up", "color": "green" } }, "type": "value" }
+              ],
+              "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+          "id": 101,
+          "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+          "pluginVersion": "11.0.0",
+          "targets": [ { "expr": "max(up{job=~\".*workflow-controller.*\"})", "refId": "A" } ],
+          "title": "Argo Workflows Controller",
+          "type": "stat"
+        },
+        {
+          "datasource": null,
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [
+                { "options": { "0": { "text": "Down", "color": "red" }, "1": { "text": "Up", "color": "green" } }, "type": "value" }
+              ],
+              "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+          "id": 102,
+          "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+          "pluginVersion": "11.0.0",
+          "targets": [ { "expr": "max(up{job=~\".*kueue.*\"})", "refId": "A" } ],
+          "title": "Kueue Controller",
+          "type": "stat"
+        },
+        {
+          "datasource": null,
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [
+                { "options": { "0": { "text": "Down", "color": "red" }, "1": { "text": "Up", "color": "green" } }, "type": "value" }
+              ],
+              "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+          "id": 103,
+          "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+          "pluginVersion": "11.0.0",
+          "targets": [ { "expr": "max(up{job=~\".*juicefs-s3-gateway.*\"})", "refId": "A" } ],
+          "title": "JuiceFS S3 Gateway",
+          "type": "stat"
+        },
+        {
+          "datasource": null,
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [
+                { "options": { "0": { "text": "Down", "color": "red" }, "1": { "text": "Up", "color": "green" } }, "type": "value" }
+              ],
+              "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+          "id": 104,
+          "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+          "pluginVersion": "11.0.0",
+          "targets": [ { "expr": "max(up{job=~\".*seaweedfs.*\"})", "refId": "A" } ],
+          "title": "SeaweedFS",
+          "type": "stat"
+        },
+        {
+          "datasource": null,
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [
+                { "options": { "0": { "text": "Down", "color": "red" }, "1": { "text": "Up", "color": "green" } }, "type": "value" }
+              ],
+              "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
+          "id": 105,
+          "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+          "pluginVersion": "11.0.0",
+          "targets": [ { "expr": "max(up{job=~\".*postgres.*\"})", "refId": "A" } ],
+          "title": "PostgreSQL (CNPG)",
+          "type": "stat"
+        },
+        {
+          "datasource": null,
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [
+                { "options": { "0": { "text": "Down", "color": "red" }, "1": { "text": "Up", "color": "green" } }, "type": "value" }
+              ],
+              "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+          "id": 106,
+          "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+          "pluginVersion": "11.0.0",
+          "targets": [ { "expr": "min(up{job=~\".*juicefs-(csi-driver|mount).*\"})", "refId": "A" } ],
+          "title": "JuiceFS CSI/Mount Pods",
+          "type": "stat"
+        },
+
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+          "id": 200,
+          "panels": [],
+          "title": "Argo Workflows",
+          "type": "row"
+        },
+        {
+          "datasource": null,
+          "description": "If this stays empty, the controller version may expose argo_workflows_gauge instead of argo_workflows_count (renamed in Argo Workflows 3.6+) - check the controller's own /metrics output.",
+          "fieldConfig": {
+            "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" },
+            "overrides": [
+              { "matcher": { "id": "byName", "options": "Succeeded" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } } ] },
+              { "matcher": { "id": "byName", "options": "Running" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "blue" } } ] },
+              { "matcher": { "id": "byName", "options": "Pending" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "yellow" } } ] },
+              { "matcher": { "id": "byName", "options": "Failed" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } } ] },
+              { "matcher": { "id": "byName", "options": "Error" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } } ] }
+            ]
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+          "id": 201,
+          "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [ { "expr": "sum(argo_workflows_count) by (phase)", "legendFormat": "{{phase}}", "refId": "A" } ],
+          "title": "Workflow Count by Phase",
+          "type": "timeseries"
+        },
+        {
+          "datasource": null,
+          "fieldConfig": {
+            "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" },
+            "overrides": [
+              { "matcher": { "id": "byName", "options": "Succeeded" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } } ] },
+              { "matcher": { "id": "byName", "options": "Running" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "blue" } } ] },
+              { "matcher": { "id": "byName", "options": "Pending" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "yellow" } } ] },
+              { "matcher": { "id": "byName", "options": "Failed" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } } ] },
+              { "matcher": { "id": "byName", "options": "Error" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } } ] }
+            ]
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+          "id": 202,
+          "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [ { "expr": "sum(argo_workflows_pods_count) by (phase)", "legendFormat": "{{phase}}", "refId": "A" } ],
+          "title": "Workflow Pods by Phase",
+          "type": "timeseries"
+        },
+        {
+          "datasource": null,
+          "description": "Depth of the controller's internal work queues. Sustained growth means the controller isn't keeping up.",
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 },
+          "id": 203,
+          "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [ { "expr": "argo_workflows_queue_depth_count", "legendFormat": "{{queue_name}}", "refId": "A" } ],
+          "title": "Controller Queue Depth",
+          "type": "timeseries"
+        },
+        {
+          "datasource": null,
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "s" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 14 },
+          "id": 204,
+          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [ { "expr": "histogram_quantile(0.95, sum(rate(argo_workflows_operation_duration_seconds_bucket[5m])) by (le))", "legendFormat": "p95 reconcile duration", "refId": "A" } ],
+          "title": "Reconciliation Duration (p95)",
+          "type": "timeseries"
+        },
+
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 },
+          "id": 300,
+          "panels": [],
+          "title": "Kueue",
+          "type": "row"
+        },
+        {
+          "datasource": null,
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 23 },
+          "id": 301,
+          "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [ { "expr": "sum(kueue_pending_workloads) by (cluster_queue, status)", "legendFormat": "{{cluster_queue}} ({{status}})", "refId": "A" } ],
+          "title": "Pending Workloads by ClusterQueue",
+          "type": "timeseries"
+        },
+        {
+          "datasource": null,
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 23 },
+          "id": 302,
+          "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [ { "expr": "sum(kueue_admitted_active_workloads) by (cluster_queue)", "legendFormat": "{{cluster_queue}}", "refId": "A" } ],
+          "title": "Admitted Active Workloads by ClusterQueue",
+          "type": "timeseries"
+        },
+        {
+          "datasource": null,
+          "description": "Covers both kleinkram-cluster-queue (kleinkram Actions, cpu-default/gpu-default flavors) and experiment-execution (experiment-burst flavor). Requires kueue's metrics.enableClusterQueueResources flag.",
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 31 },
+          "id": 303,
+          "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [
+            { "expr": "sum(kueue_cluster_queue_resource_usage) by (cluster_queue, resource)", "legendFormat": "{{cluster_queue}} {{resource}} used", "refId": "A" },
+            { "expr": "sum(kueue_cluster_queue_nominal_quota) by (cluster_queue, resource)", "legendFormat": "{{cluster_queue}} {{resource}} quota", "refId": "B" }
+          ],
+          "title": "ClusterQueue Resource Usage vs. Nominal Quota",
+          "type": "timeseries"
+        },
+        {
+          "datasource": null,
+          "description": "Label name (local_queue/name) unverified until confirmed against a live target - kleinkram's Actions LocalQueue is named kleinkram-actions.",
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 31 },
+          "id": 304,
+          "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [ { "expr": "sum(kueue_local_queue_pending_workloads) by (cluster_queue, name)", "legendFormat": "{{name}}", "refId": "A" } ],
+          "title": "LocalQueue Pending Workloads (kleinkram-actions)",
+          "type": "timeseries"
+        },
+
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 39 },
+          "id": 400,
+          "panels": [],
+          "title": "JuiceFS",
+          "type": "row"
+        },
+        {
+          "datasource": null,
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 40 },
+          "id": 401,
+          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [ { "expr": "juicefs_used_space", "legendFormat": "{{vol_name}}", "refId": "A" } ],
+          "title": "Used Space by Volume",
+          "type": "timeseries"
+        },
+        {
+          "datasource": null,
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 40 },
+          "id": 402,
+          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [ { "expr": "juicefs_used_inodes", "legendFormat": "{{vol_name}}", "refId": "A" } ],
+          "title": "Used Inodes by Volume",
+          "type": "timeseries"
+        },
+        {
+          "datasource": null,
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "max": 1, "min": 0, "unit": "percentunit" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 40 },
+          "id": 403,
+          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [ { "expr": "sum(rate(juicefs_blockcache_hits[5m])) by (vol_name) / (sum(rate(juicefs_blockcache_hits[5m])) by (vol_name) + sum(rate(juicefs_blockcache_miss[5m])) by (vol_name))", "legendFormat": "{{vol_name}}", "refId": "A" } ],
+          "title": "Blockcache Hit Ratio",
+          "type": "timeseries"
+        },
+        {
+          "datasource": null,
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 48 },
+          "id": 404,
+          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [ { "expr": "sum(rate(juicefs_object_request_errors[5m])) by (vol_name)", "legendFormat": "{{vol_name}}", "refId": "A" } ],
+          "title": "Object Storage Request Error Rate",
+          "type": "timeseries"
+        },
+        {
+          "datasource": null,
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "Bps" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 48 },
+          "id": 405,
+          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [
+            { "expr": "sum(rate(juicefs_fuse_read_size_bytes_sum[5m])) by (vol_name)", "legendFormat": "{{vol_name}} read", "refId": "A" },
+            { "expr": "sum(rate(juicefs_fuse_written_size_bytes_sum[5m])) by (vol_name)", "legendFormat": "{{vol_name}} write", "refId": "B" }
+          ],
+          "title": "FUSE Read/Write Throughput",
+          "type": "timeseries"
+        },
+
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 56 },
+          "id": 500,
+          "panels": [],
+          "title": "SeaweedFS",
+          "type": "row"
+        },
+        {
+          "datasource": null,
+          "description": "Backs zot-registry, argo-workflows and juicefs buckets. Needs global.seaweedfs.monitoring.enabled: true (apps/seaweedfs/values.yaml).",
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 57 },
+          "id": 501,
+          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [ { "expr": "SeaweedFS_s3_bucket_size_bytes", "legendFormat": "{{bucket}}", "refId": "A" } ],
+          "title": "Bucket Logical Size",
+          "type": "timeseries"
+        },
+        {
+          "datasource": null,
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 57 },
+          "id": 502,
+          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [ { "expr": "SeaweedFS_s3_bucket_object_count", "legendFormat": "{{bucket}}", "refId": "A" } ],
+          "title": "Bucket Object Count",
+          "type": "timeseries"
+        },
+        {
+          "datasource": null,
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 65 },
+          "id": 503,
+          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [ { "expr": "sum(SeaweedFS_volumeServer_total_disk_size) by (collection, type)", "legendFormat": "{{collection}} ({{type}})", "refId": "A" } ],
+          "title": "Volume Server Disk Used",
+          "type": "timeseries"
+        },
+        {
+          "datasource": null,
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 65 },
+          "id": 504,
+          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [
+            { "expr": "SeaweedFS_volumeServer_volumes", "legendFormat": "volumes ({{collection}})", "refId": "A" },
+            { "expr": "SeaweedFS_volumeServer_max_volumes", "legendFormat": "max volumes", "refId": "B" }
+          ],
+          "title": "Volumes vs. Max Volumes",
+          "type": "timeseries"
+        },
+        {
+          "datasource": null,
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "reqps" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 65 },
+          "id": 505,
+          "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [ { "expr": "sum(rate(SeaweedFS_s3_request_total[5m])) by (type, code)", "legendFormat": "{{type}} ({{code}})", "refId": "A" } ],
+          "title": "S3 Request Rate",
+          "type": "timeseries"
+        },
+
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 73 },
+          "id": 600,
+          "panels": [],
+          "title": "PostgreSQL (CNPG)",
+          "type": "row"
+        },
+        {
+          "datasource": null,
+          "description": "VERIFY: exact cnpg_collector_* metric name for database size wasn't confirmed from docs alone - check the postgres pod's :9187/metrics output once the new PodMonitor (apps/postgresql/observability.yaml) is live and correct this query if needed.",
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 74 },
+          "id": 601,
+          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [ { "expr": "cnpg_collector_pg_database_size_bytes", "legendFormat": "{{datname}}", "refId": "A" } ],
+          "title": "Database Size (verify metric name)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": null,
+          "description": "VERIFY: exact cnpg_collector_* metric name for backend/connection count wasn't confirmed from docs alone.",
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 74 },
+          "id": 602,
+          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [ { "expr": "cnpg_collector_pg_stat_activity_count", "legendFormat": "{{datname}}", "refId": "A" } ],
+          "title": "Active Connections/Backends (verify metric name)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": null,
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 74 },
+          "id": 603,
+          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [ { "expr": "cnpg_collector_pg_wal", "legendFormat": "{{value}}", "refId": "A" } ],
+          "title": "WAL File Count/Size",
+          "type": "timeseries"
+        }
+      ],
+      "refresh": "30s",
+      "schemaVersion": 39,
+      "tags": ["kleinkram", "kubernetes", "baganto"],
+      "templating": { "list": [] },
+      "time": { "from": "now-6h", "to": "now" },
+      "timepicker": {},
+      "timezone": "",
+      "title": "Kleinkram Platform Overview",
+      "uid": "kleinkram-platform-overview",
+      "version": 1,
+      "weekStart": ""
+    }
