@@ -81,7 +81,7 @@ configFiles:
                   "actions": ["read"]
                 }
               ],
-              "defaultPolicy": ["read", "create", "update"]
+              "defaultPolicy": ["read", "create"]
             }
           },
           "adminPolicy": {
