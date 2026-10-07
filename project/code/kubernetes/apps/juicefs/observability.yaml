@@ -23,9 +23,3 @@ spec:
   podMetricsEndpoints:
     - port: metrics
       path: /metrics
-      # Each mount pod's cache lives on the node it's scheduled on, so a
-      # real node label (not just the pod-scoped "instance") is needed to
-      # break blockcache usage down by node on the Grafana dashboard
-      relabelings:
-        - sourceLabels: [__meta_kubernetes_pod_node_name]
-          targetLabel: node

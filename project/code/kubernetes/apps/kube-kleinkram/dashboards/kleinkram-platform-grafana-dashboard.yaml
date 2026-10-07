@@ -305,13 +305,13 @@ data:
         },
         {
           "datasource": null,
-          "description": "Local FUSE blockcache held by each mount pod, broken down by the node it's scheduled on (relabeled from __meta_kubernetes_pod_node_name in apps/juicefs/observability.yaml) - how much already-fetched data each node is keeping around to avoid re-fetching from the object store.",
+          "description": "Local blockcache held by each JuiceFS client process (instance = host:port, mp = mount point). Kleinkram only talks to JuiceFS through the single-replica juicefs-s3-gateway (apps/juicefs-s3-gateway), not the CSI driver's per-node mount pods, so 'instance' here identifies the gateway pod itself rather than a node - with replicaCount:1 there is exactly one cache, which rules out a cross-replica cache-miss theory. If this flatlines near zero right after uploads, see the Network Transfer Rate panel's note on block-size cache bypass below.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 8, "x": 16, "y": 40 },
           "id": 406,
           "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
-          "targets": [ { "expr": "sum(juicefs_blockcache_bytes) by (node, vol_name)", "legendFormat": "{{node}} ({{vol_name}})", "refId": "A" } ],
-          "title": "Cache Usage by Node",
+          "targets": [ { "expr": "sum(juicefs_blockcache_bytes) by (instance, mp, vol_name)", "legendFormat": "{{instance}} ({{vol_name}})", "refId": "A" } ],
+          "title": "Cache Usage by Gateway Instance",
           "type": "timeseries"
         },
         {
@@ -336,7 +336,7 @@ data:
         },
         {
           "datasource": null,
-          "description": "Actual bytes JuiceFS has to fetch from/push to the object store backend (JuiceFS S3 Gateway -> SeaweedFS) - i.e. real network traffic, as opposed to FUSE Read/Write Throughput below which includes data served straight from local cache. A big gap between this panel and FUSE throughput means the cache is doing its job.",
+          "description": "Actual bytes the gateway has to fetch from/push to SeaweedFS - real network traffic, as opposed to FUSE Read/Write Throughput below which includes data served straight from local cache. A big gap between this panel and FUSE throughput means the cache is doing its job. If you see a PUT immediately followed by a same-sized GET for the same volume, that's the write-then-reread pattern you asked about - JuiceFS only writes a block into the local cache at write time if that write is SMALLER than the filesystem's block size (4MiB default; apps/juicefs-s3-gateway/values.yaml's formatOptions is unset, so this filesystem is on the default). Any write at or above block size - which covers most real ROS bag data - is uploaded straight to the object store without being cached, so any read-back, even seconds later on this same single gateway pod, is a guaranteed cache miss. Block size is fixed per-filesystem at `juicefs format` time and can't be changed retroactively for data already written, so this isn't a one-line fix for existing data - it explains the behavior rather than solves it outright.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "Bps" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 8, "x": 16, "y": 48 },
           "id": 407,
@@ -383,10 +383,49 @@ data:
           "title": "Uploaded to Object Store (range)",
           "type": "stat"
         },
+        {
+          "datasource": null,
+          "description": "Average bytes per object-store request (rate of bytes / rate of request count). JuiceFS only writes a block into the local cache at write time if that write is SMALLER than the filesystem's block size (4MiB default - see the note on 'Network Transfer Rate to Object Store'). If average PUT size here sits right around 4MiB (4194304 bytes), that confirms kleinkram's uploads are being written as full/near-full blocks that bypass the local cache entirely, which is the most likely explanation for the write-then-reread-from-SeaweedFS pattern you're seeing.",
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 64 },
+          "id": 410,
+          "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [
+            { "expr": "sum(rate(juicefs_object_request_data_bytes{method=\"GET\"}[5m])) by (vol_name) / sum(rate(juicefs_object_request_durations_histogram_seconds_count{method=\"GET\"}[5m])) by (vol_name)", "legendFormat": "{{vol_name}} avg GET size", "refId": "A" },
+            { "expr": "sum(rate(juicefs_object_request_data_bytes{method=\"PUT\"}[5m])) by (vol_name) / sum(rate(juicefs_object_request_durations_histogram_seconds_count{method=\"PUT\"}[5m])) by (vol_name)", "legendFormat": "{{vol_name}} avg PUT size", "refId": "B" }
+          ],
+          "title": "Average Object Request Size (block-size cache-bypass check)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": null,
+          "description": "Request counts (not bytes) by method. A high GET count with small average size (see panel to the left) points at many small/partial reads re-fetching the same recently-written blocks rather than one big re-transfer.",
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "reqps" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 64 },
+          "id": 411,
+          "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [
+            { "expr": "sum(rate(juicefs_object_request_durations_histogram_seconds_count{method=\"GET\"}[5m])) by (vol_name)", "legendFormat": "{{vol_name}} GET/s", "refId": "A" },
+            { "expr": "sum(rate(juicefs_object_request_durations_histogram_seconds_count{method=\"PUT\"}[5m])) by (vol_name)", "legendFormat": "{{vol_name}} PUT/s", "refId": "B" }
+          ],
+          "title": "Object Store Request Count by Method",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "description": "Raw juicefs-s3-gateway pod logs (kleinkram's actual JuiceFS data path - already shipped to Loki by Alloy's 'all_pods' pipeline in apps/alloy/values.yaml, no new infra needed). At the default log level this mostly shows startup/connection/warning lines. The gateway serves inbound S3 API calls keyed by real object/file path (e.g. GetObject on 'data/some-file.bag') but talks to SeaweedFS using internal chunk/slice keys that aren't human-readable paths - so the two aren't directly joinable from metrics alone. To correlate 'this upload caused that backend re-fetch', add 'debug' to apps/juicefs-s3-gateway/values.yaml's options (noisier, costs more Loki storage - ask before enabling) and watch for an inbound GetObject on a path lining up in time with a GET spike on the Average Object Request Size/Request Count panels above.",
+          "fieldConfig": { "defaults": {}, "overrides": [] },
+          "gridPos": { "h": 10, "w": 24, "x": 0, "y": 72 },
+          "id": 412,
+          "options": { "dedupStrategy": "none", "enableLogDetails": true, "prettifyLogMessage": false, "showTime": true, "sortOrder": "Descending", "wrapLogMessage": false },
+          "targets": [ { "expr": "{namespace=\"juicefs\", pod=~\".*gateway.*\"}", "refId": "A" } ],
+          "title": "JuiceFS S3 Gateway Logs",
+          "type": "logs"
+        },
 
         {
           "collapsed": false,
-          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 64 },
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 82 },
           "id": 500,
           "panels": [],
           "title": "SeaweedFS",
@@ -396,7 +435,7 @@ data:
           "datasource": null,
           "description": "Backs zot-registry, argo-workflows and juicefs buckets. Needs global.seaweedfs.monitoring.enabled: true (apps/seaweedfs/values.yaml).",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 65 },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 83 },
           "id": 501,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "SeaweedFS_s3_bucket_size_bytes", "legendFormat": "{{bucket}}", "refId": "A" } ],
@@ -406,7 +445,7 @@ data:
         {
           "datasource": null,
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 65 },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 83 },
           "id": 502,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "SeaweedFS_s3_bucket_object_count", "legendFormat": "{{bucket}}", "refId": "A" } ],
@@ -416,7 +455,7 @@ data:
         {
           "datasource": null,
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 73 },
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 91 },
           "id": 503,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "sum(SeaweedFS_volumeServer_total_disk_size) by (collection, type)", "legendFormat": "{{collection}} ({{type}})", "refId": "A" } ],
@@ -426,7 +465,7 @@ data:
         {
           "datasource": null,
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 73 },
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 91 },
           "id": 504,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [
@@ -439,7 +478,7 @@ data:
         {
           "datasource": null,
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "reqps" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 73 },
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 91 },
           "id": 505,
           "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "sum(rate(SeaweedFS_s3_request_total[5m])) by (type, code)", "legendFormat": "{{type}} ({{code}})", "refId": "A" } ],
@@ -450,7 +489,7 @@ data:
           "datasource": null,
           "description": "Real network bytes in/out of each S3 bucket (SeaweedFS_s3_bucket_traffic_*_bytes_total) - this is the actual data SeaweedFS is moving for Kleinkram, as opposed to Bucket Logical Size above which is data at rest.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "Bps" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 81 },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 99 },
           "id": 506,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [
@@ -464,7 +503,7 @@ data:
           "datasource": null,
           "description": "Total bytes received into S3 buckets over the dashboard's selected time range.",
           "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 6, "x": 12, "y": 81 },
+          "gridPos": { "h": 8, "w": 6, "x": 12, "y": 99 },
           "id": 507,
           "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "center", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
           "targets": [ { "expr": "sum(increase(SeaweedFS_s3_bucket_traffic_received_bytes_total[$__range]))", "refId": "A" } ],
@@ -475,7 +514,7 @@ data:
           "datasource": null,
           "description": "Total bytes sent out of S3 buckets over the dashboard's selected time range.",
           "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 6, "x": 18, "y": 81 },
+          "gridPos": { "h": 8, "w": 6, "x": 18, "y": 99 },
           "id": 508,
           "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "center", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
           "targets": [ { "expr": "sum(increase(SeaweedFS_s3_bucket_traffic_sent_bytes_total[$__range]))", "refId": "A" } ],
@@ -485,7 +524,7 @@ data:
 
         {
           "collapsed": false,
-          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 89 },
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 107 },
           "id": 600,
           "panels": [],
           "title": "PostgreSQL (CNPG)",
@@ -495,7 +534,7 @@ data:
           "datasource": null,
           "description": "VERIFY: exact cnpg_collector_* metric name for database size wasn't confirmed from docs alone - check the postgres pod's :9187/metrics output once the new PodMonitor (apps/postgresql/observability.yaml) is live and correct this query if needed.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 90 },
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 108 },
           "id": 601,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "cnpg_collector_pg_database_size_bytes", "legendFormat": "{{datname}}", "refId": "A" } ],
@@ -506,7 +545,7 @@ data:
           "datasource": null,
           "description": "VERIFY: exact cnpg_collector_* metric name for backend/connection count wasn't confirmed from docs alone.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 90 },
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 108 },
           "id": 602,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "cnpg_collector_pg_stat_activity_count", "legendFormat": "{{datname}}", "refId": "A" } ],
@@ -516,7 +555,7 @@ data:
         {
           "datasource": null,
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 90 },
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 108 },
           "id": 603,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "cnpg_collector_pg_wal", "legendFormat": "{{value}}", "refId": "A" } ],
