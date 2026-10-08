@@ -1,0 +1,140 @@
+# Hand-authored (not Helm) because the upstream juicefs-s3-gateway chart
+# only ships a single-replica Deployment and there is no DaemonSet mode to
+# configure via values. See README.md for the full per-node-gateway
+# rationale
+#
+# initContainer/container commands and env wiring below intentionally mirror
+# the chart's own deployment.yaml template (community-edition / non-token
+# path). Only the workload kind,
+# the cache volume/flags, the GPU toleration, and the reloader annotation
+# are new.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: juicefs-s3-gateway
+  namespace: juicefs
+  labels:
+    app.kubernetes.io/name: juicefs-s3-gateway
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: juicefs-s3-gateway
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: juicefs-s3-gateway
+    spec:
+      # Every node needs a local gateway for internalTrafficPolicy: Local 
+      # to work for pods scheduled there, including GPU nodes (some 
+      # kube-kleinkram Action pods can land on the gpu ResourceFlavor's
+      # tainted nodes)
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      initContainers:
+        - name: format
+          image: juicedata/mount:ce-v1.2.3
+          imagePullPolicy: IfNotPresent
+          # Idempotent - safe to re-run on every pod start/restart.
+          command:
+            - sh
+            - -c
+            - juicefs format ${metaurl} ${name} --storage=${storage} --bucket=${bucket} --access-key=${accesskey} --secret-key=${secretkey}
+          envFrom:
+            - secretRef:
+                name: juicefs-secret
+          env:
+            # access-key/secret-key are re-mapped to hyphen-free names here
+            # since shell can't reference ${access-key} from the envFrom
+            # above - same workaround the original chart template used.
+            - name: accesskey
+              valueFrom:
+                secretKeyRef:
+                  name: juicefs-secret
+                  key: access-key
+            - name: secretkey
+              valueFrom:
+                secretKeyRef:
+                  name: juicefs-secret
+                  key: secret-key
+      containers:
+        - name: gateway
+          image: juicedata/mount:ce-v1.2.3
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            # --multi-buckets: exposes each top-level directory
+            # (data/dbdumps/action-artifacts) as its own S3 bucket.
+            # --cache-dir/--cache-size: per-node local disk cache, backed by
+            # the hostPath volume below. 102400 MiB = 100 GiB (100 * 1024)
+            - juicefs gateway ${METAURL} 0.0.0.0:9000 --metrics=0.0.0.0:9567 --multi-buckets --cache-dir=/var/jfsCache --cache-size=102400
+          env:
+            - name: METAURL
+              valueFrom:
+                secretKeyRef:
+                  name: juicefs-secret
+                  key: metaurl
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: juicefs-secret
+                  key: access-key
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: juicefs-secret
+                  key: secret-key
+          ports:
+            - containerPort: 9000
+              name: http
+            - containerPort: 9567
+              name: metrics
+          resources:
+            limits:
+              cpu: 5000m
+              memory: 5Gi
+            requests:
+              cpu: 1000m
+              memory: 1Gi
+          volumeMounts:
+            - name: cache
+              mountPath: /var/jfsCache
+      volumes:
+        - name: cache
+          hostPath:
+            # DirectoryOrCreate means automatic per-node setup, including
+            # under cluster autoscaling. The directory is created on this
+            # node automatically the first time a gateway pod lands here.
+            # free-space-ratio defaults to 0.1, so JuiceFS can still evict
+            # cache early if this node's underlying disk drops below 10%
+            # free, independent of the cap above
+            path: /var/lib/juicefs-gateway-cache
+            type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: juicefs-s3-gateway
+  namespace: juicefs
+  labels:
+    app.kubernetes.io/name: juicefs-s3-gateway
+spec:
+  type: ClusterIP
+  # Makes kube-proxy only route a pod's request to the gateway instance on
+  # that pod's own node (never a different node's)
+  internalTrafficPolicy: Local
+  ports:
+    - port: 9000
+      targetPort: 9000
+      protocol: TCP
+      name: http
+    - port: 9567
+      targetPort: 9567
+      protocol: TCP
+      name: metrics
+  selector:
+    app.kubernetes.io/name: juicefs-s3-gateway

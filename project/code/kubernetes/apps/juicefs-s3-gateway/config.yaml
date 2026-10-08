@@ -1,10 +1,5 @@
 appName: juicefs-s3-gateway
 namespace: juicefs
 
-hasHelm: true
+hasHelm: false
 hasManifests: true
-
-helm:
-  repoURL: https://juicedata.github.io/charts/
-  chart: juicefs-s3-gateway
-  targetRevision: 0.11.4
