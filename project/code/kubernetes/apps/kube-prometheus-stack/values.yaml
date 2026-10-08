@@ -20,6 +20,16 @@ prometheus:
             requests:
               storage: 50Gi
 
+# By default kube-state-metrics only exposes well-known labels on
+# kube_pod_labels (app.kubernetes.io/*, etc). Allowlist Argo Workflows' own
+# pod labels so a dashboard can join kube_pod_info (which carries the node
+# name) against kube_pod_labels to show which node each Workflow pod landed
+# on - see apps/kube-kleinkram's dashboard "Argo Workflow Pod Placement by
+# Node" panel.
+kube-state-metrics:
+  extraArgs:
+    - --metric-labels-allowlist=pods=[workflows.argoproj.io/workflow,workflows.argoproj.io/completed]
+
 grafana:
   admin:
     existingSecret: grafana-admin-credentials

@@ -10,3 +10,10 @@ spec:
   endpoints:
     - port: metrics
       path: /metrics
+      # manifest.yaml runs this as a DaemonSet (one gateway pod per node), so
+      # every juicefs_* series only carries a pod-identifying 'instance'
+      # label by default. Stamp the node name on too so dashboards/queries
+      # can correlate cache behavior with the node it's actually running on.
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_node_name]
+          targetLabel: node
