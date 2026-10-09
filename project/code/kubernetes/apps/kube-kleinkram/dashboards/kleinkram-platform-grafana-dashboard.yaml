@@ -286,26 +286,6 @@ data:
         },
         {
           "datasource": null,
-          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 40 },
-          "id": 401,
-          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
-          "targets": [ { "expr": "juicefs_used_space", "legendFormat": "{{vol_name}}", "refId": "A" } ],
-          "title": "Used Space by Volume",
-          "type": "timeseries"
-        },
-        {
-          "datasource": null,
-          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 40 },
-          "id": 402,
-          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
-          "targets": [ { "expr": "juicefs_used_inodes", "legendFormat": "{{vol_name}}", "refId": "A" } ],
-          "title": "Used Inodes by Volume",
-          "type": "timeseries"
-        },
-        {
-          "datasource": null,
           "description": "Local blockcache held by each JuiceFS gateway pod (instance = pod IP:port, mp = mount point). apps/juicefs-s3-gateway now runs as a DaemonSet (one gateway pod, and one independent cache, per node) rather than a single-replica Deployment, so expect one line per node here - that's expected, not a cross-replica cache-miss symptom. The 'node' label (added via that app's ServiceMonitor relabeling) is included so a thin/flatlining line can be matched to a specific node. If a node's line flatlines near zero right after uploads, see the Network Transfer Rate panel's note on block-size cache bypass below.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 8, "x": 16, "y": 40 },
