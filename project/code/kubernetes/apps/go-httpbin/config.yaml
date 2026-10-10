@@ -1,5 +1,0 @@
-appName: go-httpbin
-namespace: go-httpbin
-
-hasHelm: false
-hasManifests: true
