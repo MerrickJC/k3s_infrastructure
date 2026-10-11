@@ -9,8 +9,15 @@
 #
 # Authenticates via the kleinkram CLI's own config file format rather than
 # env vars: the kleinkram-validation-credentials Secret (created directly in
-# the kleinkram namespace, NOT via GitOps/sealed-secrets is mounted as a
-# single file at $HOME/.kleinkram.json ($HOME is /tmp here, see below).
+# the kleinkram namespace, NOT via GitOps/sealed-secrets) is mounted
+# read-only at /secrets/.kleinkram.json, then copied to $HOME/.kleinkram.json
+# ($HOME is /tmp) before running the script. It can't be mounted straight at
+# $HOME/.kleinkram.json: the kleinkram client rewrites that file on every
+# token refresh (save_config -> os.replace), and Secret volumes are backed by
+# a read-only symlink structure that rejects writes/renames at their mount
+# path - it fails with a Read-only/PermissionError that the client then
+# masks as a generic NotAuthenticated. Copying it onto a plain tmpfs path
+# first gives it something it's actually allowed to rewrite.
 #
 # Starts suspended (spec.suspend: true below). Enable it manually when
 # wanted: kubectl patch cronjob experiment-1-trigger-missions -n kleinkram
@@ -39,14 +46,13 @@ spec:
           containers:
             - name: trigger-missions
               image: registry.direct.merrickcampbell.au/kleinkram-cli-base:v1.1.0
-              command: ["python", "/scripts/trigger_missions.py"]
+              command: ["/bin/sh", "-c"]
               args:
-                - --template
-                - "CPU and Memory Test"
-                - --missions-file
-                - /scripts/missions.txt
-                - --project
-                - "Driverless"
+                - |
+                  set -eu
+                  cp /secrets/.kleinkram.json /tmp/.kleinkram.json
+                  chmod 600 /tmp/.kleinkram.json
+                  exec python /scripts/trigger_missions.py --template "CPU and Memory Test" --missions-file /scripts/missions.txt --project "Driverless"
               env:
                 - name: HOME
                   value: /tmp
@@ -67,10 +73,8 @@ spec:
                 - name: scripts
                   mountPath: /scripts
                   readOnly: true
-                # subPath mounts just this one file instead of replacing all of $HOME
                 - name: kleinkram-credentials
-                  mountPath: /tmp/.kleinkram.json
-                  subPath: .kleinkram.json
+                  mountPath: /secrets
                   readOnly: true
           volumes:
             - name: scripts
