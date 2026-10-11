@@ -396,10 +396,24 @@ data:
           "type": "timeseries"
         },
         {
+          "datasource": null,
+          "description": "Local blockcache capacity pressure by node: juicefs_cache_evict counts blocks explicitly evicted by the normal LRU-style cache policy as it reclaims space, while juicefs_cache_drop counts blocks dropped due to errors or the disk being full. A steady evict rate under a full cache is expected churn; any sustained drop rate means the gateway couldn't even complete a cache write on that node (disk full or I/O error) and is worth paging on, since it degrades to uncached reads on every miss (see 'Network Transfer Rate to Object Store by Node' below for the resulting backend traffic).",
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 72 },
+          "id": 413,
+          "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [
+            { "expr": "sum(rate(juicefs_cache_evict[5m])) by (node, vol_name)", "legendFormat": "{{node}} ({{vol_name}}) evicted", "refId": "A" },
+            { "expr": "sum(rate(juicefs_cache_drop[5m])) by (node, vol_name)", "legendFormat": "{{node}} ({{vol_name}}) dropped", "refId": "B" }
+          ],
+          "title": "Cache Eviction & Drop Rate by Node",
+          "type": "timeseries"
+        },
+        {
           "datasource": { "type": "loki", "uid": "loki" },
           "description": "Raw juicefs-s3-gateway pod logs (kleinkram's actual JuiceFS data path - already shipped to Loki by Alloy's 'all_pods' pipeline in apps/alloy/values.yaml, no new infra needed). At the default log level this mostly shows startup/connection/warning lines. The gateway serves inbound S3 API calls keyed by real object/file path (e.g. GetObject on 'data/some-file.bag') but talks to SeaweedFS using internal chunk/slice keys that aren't human-readable paths - so the two aren't directly joinable from metrics alone. To correlate 'this upload caused that backend re-fetch', add 'debug' to apps/juicefs-s3-gateway/values.yaml's options (noisier, costs more Loki storage - ask before enabling) and watch for an inbound GetObject on a path lining up in time with a GET spike on the Average Object Request Size/Request Count panels above.",
           "fieldConfig": { "defaults": {}, "overrides": [] },
-          "gridPos": { "h": 10, "w": 24, "x": 0, "y": 72 },
+          "gridPos": { "h": 10, "w": 24, "x": 0, "y": 80 },
           "id": 412,
           "options": { "dedupStrategy": "none", "enableLogDetails": true, "prettifyLogMessage": false, "showTime": true, "sortOrder": "Descending", "wrapLogMessage": false },
           "targets": [ { "expr": "{namespace=\"juicefs\", pod=~\".*gateway.*\"}", "refId": "A" } ],
@@ -409,7 +423,7 @@ data:
 
         {
           "collapsed": false,
-          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 82 },
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 90 },
           "id": 500,
           "panels": [],
           "title": "SeaweedFS",
@@ -419,7 +433,7 @@ data:
           "datasource": null,
           "description": "Backs zot-registry, argo-workflows and juicefs buckets. Needs global.seaweedfs.monitoring.enabled: true (apps/seaweedfs/values.yaml).",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 83 },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 91 },
           "id": 501,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "SeaweedFS_s3_bucket_size_bytes", "legendFormat": "{{bucket}}", "refId": "A" } ],
@@ -429,7 +443,7 @@ data:
         {
           "datasource": null,
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 83 },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 91 },
           "id": 502,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "SeaweedFS_s3_bucket_object_count", "legendFormat": "{{bucket}}", "refId": "A" } ],
@@ -439,7 +453,7 @@ data:
         {
           "datasource": null,
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 91 },
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 99 },
           "id": 503,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "sum(SeaweedFS_volumeServer_total_disk_size) by (collection, type)", "legendFormat": "{{collection}} ({{type}})", "refId": "A" } ],
@@ -449,7 +463,7 @@ data:
         {
           "datasource": null,
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 91 },
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 99 },
           "id": 504,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [
@@ -462,7 +476,7 @@ data:
         {
           "datasource": null,
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "reqps" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 91 },
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 99 },
           "id": 505,
           "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "sum(rate(SeaweedFS_s3_request_total[5m])) by (type, code)", "legendFormat": "{{type}} ({{code}})", "refId": "A" } ],
@@ -473,7 +487,7 @@ data:
           "datasource": null,
           "description": "Real network bytes in/out of each S3 bucket (SeaweedFS_s3_bucket_traffic_*_bytes_total) - this is the actual data SeaweedFS is moving for Kleinkram, as opposed to Bucket Logical Size above which is data at rest.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "Bps" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 99 },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 107 },
           "id": 506,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [
@@ -487,7 +501,7 @@ data:
           "datasource": null,
           "description": "Total bytes received into S3 buckets over the dashboard's selected time range.",
           "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 6, "x": 12, "y": 99 },
+          "gridPos": { "h": 8, "w": 6, "x": 12, "y": 107 },
           "id": 507,
           "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "center", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
           "targets": [ { "expr": "sum(increase(SeaweedFS_s3_bucket_traffic_received_bytes_total[$__range]))", "refId": "A" } ],
@@ -498,7 +512,7 @@ data:
           "datasource": null,
           "description": "Total bytes sent out of S3 buckets over the dashboard's selected time range.",
           "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 6, "x": 18, "y": 99 },
+          "gridPos": { "h": 8, "w": 6, "x": 18, "y": 107 },
           "id": 508,
           "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "center", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
           "targets": [ { "expr": "sum(increase(SeaweedFS_s3_bucket_traffic_sent_bytes_total[$__range]))", "refId": "A" } ],
@@ -508,7 +522,7 @@ data:
 
         {
           "collapsed": false,
-          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 107 },
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 115 },
           "id": 600,
           "panels": [],
           "title": "PostgreSQL (CNPG)",
@@ -518,7 +532,7 @@ data:
           "datasource": null,
           "description": "VERIFY: exact cnpg_collector_* metric name for database size wasn't confirmed from docs alone - check the postgres pod's :9187/metrics output once the new PodMonitor (apps/postgresql/observability.yaml) is live and correct this query if needed.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 108 },
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 116 },
           "id": 601,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "cnpg_collector_pg_database_size_bytes", "legendFormat": "{{datname}}", "refId": "A" } ],
@@ -529,7 +543,7 @@ data:
           "datasource": null,
           "description": "VERIFY: exact cnpg_collector_* metric name for backend/connection count wasn't confirmed from docs alone.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 108 },
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 116 },
           "id": 602,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "cnpg_collector_pg_stat_activity_count", "legendFormat": "{{datname}}", "refId": "A" } ],
@@ -539,7 +553,7 @@ data:
         {
           "datasource": null,
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 108 },
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 116 },
           "id": 603,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "cnpg_collector_pg_wal", "legendFormat": "{{value}}", "refId": "A" } ],
@@ -549,7 +563,7 @@ data:
 
         {
           "collapsed": false,
-          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 116 },
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 124 },
           "id": 700,
           "panels": [],
           "title": "Per-Node Diagnostics",
@@ -559,7 +573,7 @@ data:
           "datasource": null,
           "description": "Live placement of currently-running Argo Workflow pods, one row per pod. Needs apps/kube-prometheus-stack/values.yaml's kube-state-metrics extraArgs (--metric-labels-allowlist) to expose Argo's 'workflows.argoproj.io/workflow'/'completed' pod labels on kube_pod_labels - without that, this table stays empty. Joins kube_pod_labels (which carries the workflow name) against kube_pod_info (which carries the node) on namespace+pod.",
           "fieldConfig": { "defaults": {}, "overrides": [] },
-          "gridPos": { "h": 9, "w": 12, "x": 0, "y": 117 },
+          "gridPos": { "h": 9, "w": 12, "x": 0, "y": 125 },
           "id": 701,
           "options": { "showHeader": true },
           "targets": [
@@ -577,7 +591,7 @@ data:
           "datasource": null,
           "description": "p95 round-trip latency each gateway node sees talking to SeaweedFS, independent of throughput. A node with persistently higher latency than its peers (while serving similar request sizes/counts - see panels above) points at a node-specific network path problem to the object store rather than a cache-algorithm one. Needs apps/juicefs-s3-gateway's ServiceMonitor relabeling (node label) to be live.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "s" }, "overrides": [] },
-          "gridPos": { "h": 9, "w": 12, "x": 12, "y": 117 },
+          "gridPos": { "h": 9, "w": 12, "x": 12, "y": 125 },
           "id": 702,
           "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [
