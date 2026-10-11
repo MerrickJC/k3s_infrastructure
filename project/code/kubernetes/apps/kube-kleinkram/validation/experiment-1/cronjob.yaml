@@ -45,6 +45,8 @@ spec:
                 - "CPU and Memory Test"
                 - --missions-file
                 - /scripts/missions.txt
+                - --project
+                - "Driverless"
               env:
                 - name: HOME
                   value: /tmp
