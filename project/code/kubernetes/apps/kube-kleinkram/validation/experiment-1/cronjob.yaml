@@ -1,0 +1,78 @@
+# Runs trigger_missions.py (mirrored into configmap.yaml) every 5 minutes to
+# repeatedly launch the "CPU and Memory Test" action template across every
+# mission in missions.txt, as an ongoing load-test of kleinkram's action
+# execution path.
+#
+# No custom image is built for this - kleinkram is pip-installed at container
+# start against a plain python:3.12-slim base, since this is a throwaway
+# validation load rather than a long-lived app component.
+#
+# Authenticates via the kleinkram CLI's own config file format rather than
+# env vars: the kleinkram-validation-credentials Secret (created directly in
+# the kleinkram namespace, NOT via GitOps/sealed-secrets is mounted as a
+# single file at $HOME/.kleinkram.json ($HOME is /tmp here, see below).
+#
+# Starts suspended (spec.suspend: true below). Enable it manually when
+# wanted: kubectl patch cronjob experiment-1-trigger-missions -n kleinkram
+# --type=merge -p '{"spec":{"suspend":false}}' (back to 'true' to stop
+# again). config.yaml's ignoreDifferences for this CronJob's spec/suspend
+# keeps ArgoCD's selfHeal from reverting the patch.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: experiment-1-trigger-missions
+  namespace: kleinkram
+spec:
+  schedule: "*/5 * * * *"
+  suspend: true
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: trigger-missions
+              image: python:3.12-slim
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  set -eu
+                  pip install --no-cache-dir --quiet kleinkram
+                  python /scripts/trigger_missions.py --template "CPU and Memory Test" --missions-file /scripts/missions.txt
+              env:
+                - name: HOME
+                  value: /tmp
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 200m
+                  memory: 256Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+                runAsNonRoot: true
+                runAsUser: 1000
+              volumeMounts:
+                - name: scripts
+                  mountPath: /scripts
+                  readOnly: true
+                # subPath mounts just this one file, so it doesn't shadow the
+                # rest of $HOME (pip install --user writes under /tmp/.local)
+                - name: kleinkram-credentials
+                  mountPath: /tmp/.kleinkram.json
+                  subPath: .kleinkram.json
+                  readOnly: true
+          volumes:
+            - name: scripts
+              configMap:
+                name: experiment-1-trigger-missions-scripts
+            - name: kleinkram-credentials
+              secret:
+                secretName: kleinkram-validation-credentials
