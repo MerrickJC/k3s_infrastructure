@@ -16,8 +16,11 @@
 # token refresh (save_config -> os.replace), and Secret volumes are backed by
 # a read-only symlink structure that rejects writes/renames at their mount
 # path - it fails with a Read-only/PermissionError that the client then
-# masks as a generic NotAuthenticated. Copying it onto a plain tmpfs path
-# first gives it something it's actually allowed to rewrite.
+# masks as a generic NotAuthenticated. Copying it onto a writable path first
+# gives it something it's actually allowed to rewrite - that writable path
+# is an emptyDir mounted at /tmp (see volumes below), not just the image's
+# own /tmp, since kleinkram-cli-base's /tmp isn't necessarily writable by
+# the arbitrary runAsUser (1000) set below.
 #
 # Starts suspended (spec.suspend: true below). Enable it manually when
 # wanted: kubectl patch cronjob experiment-1-trigger-missions -n kleinkram
@@ -76,6 +79,8 @@ spec:
                 - name: kleinkram-credentials
                   mountPath: /secrets
                   readOnly: true
+                - name: tmp
+                  mountPath: /tmp
           volumes:
             - name: scripts
               configMap:
@@ -83,3 +88,5 @@ spec:
             - name: kleinkram-credentials
               secret:
                 secretName: kleinkram-validation-credentials
+            - name: tmp
+              emptyDir: {}
