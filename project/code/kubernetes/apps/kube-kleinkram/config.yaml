@@ -21,3 +21,10 @@ ignoreDifferences:
     kind: Deployment
     jsonPointers:
       - /spec/replicas
+  # Lets spec.suspend be toggled live (kubectl patch, see cronjob.yaml) as a
+  # kill switch without ArgoCD's selfHeal reverting it back to git's value.
+  - group: batch
+    kind: CronJob
+    name: experiment-1-trigger-missions
+    jsonPointers:
+      - /spec/suspend
