@@ -163,7 +163,6 @@ data:
         },
         {
           "datasource": null,
-          "description": "If this stays empty, the controller version may expose argo_workflows_gauge instead of argo_workflows_count (renamed in Argo Workflows 3.6+) - check the controller's own /metrics output.",
           "fieldConfig": {
             "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" },
             "overrides": [
@@ -177,7 +176,7 @@ data:
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
           "id": 201,
           "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
-          "targets": [ { "expr": "sum(argo_workflows_count) by (phase)", "legendFormat": "{{phase}}", "refId": "A" } ],
+          "targets": [ { "expr": "sum(argo_workflows_gauge) by (phase)", "legendFormat": "{{phase}}", "refId": "A" } ],
           "title": "Workflow Count by Phase",
           "type": "timeseries"
         },
@@ -196,7 +195,7 @@ data:
           "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
           "id": 202,
           "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
-          "targets": [ { "expr": "sum(argo_workflows_pods_count) by (phase)", "legendFormat": "{{phase}}", "refId": "A" } ],
+          "targets": [ { "expr": "sum(argo_workflows_pods_gauge) by (phase)", "legendFormat": "{{phase}}", "refId": "A" } ],
           "title": "Workflow Pods by Phase",
           "type": "timeseries"
         },
@@ -207,7 +206,7 @@ data:
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 },
           "id": 203,
           "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
-          "targets": [ { "expr": "argo_workflows_queue_depth_count", "legendFormat": "{{queue_name}}", "refId": "A" } ],
+          "targets": [ { "expr": "argo_workflows_queue_depth_gauge", "legendFormat": "{{queue_name}}", "refId": "A" } ],
           "title": "Controller Queue Depth",
           "type": "timeseries"
         },
