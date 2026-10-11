@@ -3,9 +3,9 @@
 # mission in missions.txt, as an ongoing load-test of kleinkram's action
 # execution path.
 #
-# No custom image is built for this - kleinkram is pip-installed at container
-# start against a plain python:3.12-slim base, since this is a throwaway
-# validation load rather than a long-lived app component.
+# Uses the pre-built registry.direct.merrickcampbell.au/kleinkram-cli-base
+# image (has the kleinkram CLI/package already installed) from our private
+# Zot registry, via zot-pull-secret.
 #
 # Authenticates via the kleinkram CLI's own config file format rather than
 # env vars: the kleinkram-validation-credentials Secret (created directly in
@@ -34,15 +34,17 @@ spec:
       template:
         spec:
           restartPolicy: Never
+          imagePullSecrets:
+            - name: zot-pull-secret
           containers:
             - name: trigger-missions
-              image: python:3.12-slim
-              command: ["/bin/sh", "-c"]
+              image: registry.direct.merrickcampbell.au/kleinkram-cli-base:v1.1.0
+              command: ["python", "/scripts/trigger_missions.py"]
               args:
-                - |
-                  set -eu
-                  pip install --no-cache-dir --quiet kleinkram
-                  python /scripts/trigger_missions.py --template "CPU and Memory Test" --missions-file /scripts/missions.txt
+                - --template
+                - "CPU and Memory Test"
+                - --missions-file
+                - /scripts/missions.txt
               env:
                 - name: HOME
                   value: /tmp
@@ -63,8 +65,7 @@ spec:
                 - name: scripts
                   mountPath: /scripts
                   readOnly: true
-                # subPath mounts just this one file, so it doesn't shadow the
-                # rest of $HOME (pip install --user writes under /tmp/.local)
+                # subPath mounts just this one file instead of replacing all of $HOME
                 - name: kleinkram-credentials
                   mountPath: /tmp/.kleinkram.json
                   subPath: .kleinkram.json
