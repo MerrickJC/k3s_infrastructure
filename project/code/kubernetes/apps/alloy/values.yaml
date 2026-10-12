@@ -138,3 +138,8 @@ alloy:
 
 controller:
   type: daemonset
+  tolerations:
+    - key: merrickcampbell.au/node-role
+      operator: Equal
+      value: kleinkram-actions
+      effect: NoSchedule

@@ -51,3 +51,12 @@ loki:
   compactor:
     retention_enabled: true
     delete_request_store: filesystem
+
+# loki-canary is a DaemonSet and needs to keep running on the
+# kleinkram-actions node pool once it's tainted
+lokiCanary:
+  tolerations:
+    - key: merrickcampbell.au/node-role
+      operator: Equal
+      value: kleinkram-actions
+      effect: NoSchedule

@@ -30,6 +30,15 @@ kube-state-metrics:
   extraArgs:
     - --metric-labels-allowlist=pods=[workflows.argoproj.io/workflow,workflows.argoproj.io/completed]
 
+# node-exporter is a DaemonSet and needs to keep running on the
+# kleinkram-actions node pool once it's tainted
+prometheus-node-exporter:
+  tolerations:
+    - key: merrickcampbell.au/node-role
+      operator: Equal
+      value: kleinkram-actions
+      effect: NoSchedule
+
 grafana:
   admin:
     existingSecret: grafana-admin-credentials

@@ -82,3 +82,17 @@ argo:
 
 networkPolicy:
   enabled: false
+
+kueue:
+  resourceFlavors:
+    cpu:
+      name: cpu-default
+      # Confines Action pods to the kleinkram-actionsnode pool (tainted with a
+      # matching key/value)
+      nodeSelector:
+        merrickcampbell.au/node-role: kleinkram-actions
+      tolerations:
+        - key: merrickcampbell.au/node-role
+          operator: Equal
+          value: kleinkram-actions
+          effect: NoSchedule

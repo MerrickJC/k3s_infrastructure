@@ -34,6 +34,10 @@ spec:
         - key: nvidia.com/gpu
           operator: Exists
           effect: NoSchedule
+        - key: merrickcampbell.au/node-role
+          operator: Equal
+          value: kleinkram-actions
+          effect: NoSchedule
       initContainers:
         - name: format
           image: juicedata/mount:ce-v1.2.3
