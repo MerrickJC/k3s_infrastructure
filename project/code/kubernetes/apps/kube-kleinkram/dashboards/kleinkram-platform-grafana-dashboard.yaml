@@ -285,7 +285,7 @@ data:
         },
         {
           "datasource": null,
-          "description": "Local blockcache held by each JuiceFS gateway pod (instance = pod IP:port, mp = mount point). apps/juicefs-s3-gateway now runs as a DaemonSet (one gateway pod, and one independent cache, per node) rather than a single-replica Deployment, so expect one line per node here - that's expected, not a cross-replica cache-miss symptom. The 'node' label (added via that app's ServiceMonitor relabeling) is included so a thin/flatlining line can be matched to a specific node. If a node's line flatlines near zero right after uploads, see the Network Transfer Rate panel's note on block-size cache bypass below.",
+          "description": "Local blockcache held by each JuiceFS gateway pod, one line per node since the gateway is a DaemonSet with an independent cache per node - not a cross-replica cache-miss symptom. A line flatlining near zero after uploads points to block-size cache bypass; see the Network Transfer Rate panel below.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 8, "x": 16, "y": 40 },
           "id": 406,
@@ -296,7 +296,7 @@ data:
         },
         {
           "datasource": null,
-          "description": "Per-node cache hit ratio, since apps/juicefs-s3-gateway is a DaemonSet with one independent cache per node ('node' label added via that app's ServiceMonitor relabeling). A node sitting persistently lower than its peers points at something specific to that node (e.g. cold cache after a reschedule, hostPath disk nearing the 10% free-space-ratio eviction threshold, or that node simply fielding different traffic) rather than a gateway-wide problem.",
+          "description": "Per-node cache hit ratio (DaemonSet gateway, independent cache per node). A node persistently lower than its peers points at a node-specific cause - cold cache after a reschedule, disk nearing the eviction threshold, or different traffic - not a gateway-wide issue.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "max": 1, "min": 0, "unit": "percentunit" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 8, "x": 0, "y": 48 },
           "id": 403,
@@ -318,7 +318,7 @@ data:
         },
         {
           "datasource": null,
-          "description": "Actual bytes each gateway node has to fetch from/push to SeaweedFS - real network traffic, as opposed to FUSE Read/Write Throughput below which includes data served straight from local cache. A big gap between this panel and FUSE throughput means the cache is doing its job. Broken out per node (the gateway is a DaemonSet - one cache per node) so a node that's disproportionately re-fetching from the backend is visible instead of averaged away. If you see a PUT immediately followed by a same-sized GET for the same volume on the SAME node, that's the write-then-reread pattern: JuiceFS only writes a block into the local cache at write time if that write is SMALLER than the filesystem's block size (4MiB default; apps/juicefs-s3-gateway/values.yaml's formatOptions is unset, so this filesystem is on the default). Any write at or above block size - which covers most real ROS bag data - is uploaded straight to the object store without being cached, so any read-back is a guaranteed cache miss on that node, even seconds later. A read-back on a DIFFERENT node is always a miss regardless of block size, since each node's cache is independent. Block size is fixed per-filesystem at `juicefs format` time and can't be changed retroactively for data already written, so this isn't a one-line fix for existing data - it explains the behavior rather than solves it outright.",
+          "description": "Real network bytes per node to/from SeaweedFS, broken out per node (DaemonSet, independent cache per node) so backend re-fetches aren't averaged away. A PUT immediately followed by a same-sized GET on the same node is the write-then-reread pattern: writes at or above the filesystem's block size (4MiB default, unset in values.yaml) bypass the local cache entirely, so most ROS bag uploads are guaranteed cache misses on read-back.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "Bps" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 8, "x": 16, "y": 48 },
           "id": 407,
@@ -368,7 +368,7 @@ data:
         },
         {
           "datasource": null,
-          "description": "Average bytes per object-store request (rate of bytes / rate of request count), broken out by node. JuiceFS only writes a block into the local cache at write time if that write is SMALLER than the filesystem's block size (4MiB default - see the note on 'Network Transfer Rate to Object Store by Node'). If average PUT size here sits right around 4MiB (4194304 bytes) on a given node, that confirms uploads landing on that node are being written as full/near-full blocks that bypass its local cache entirely - the most likely explanation for a write-then-reread-from-SeaweedFS pattern on that node.",
+          "description": "Average bytes per object-store request by node. An average PUT size near the 4MiB block size (see Network Transfer Rate panel) confirms uploads on that node are bypassing the local cache - the likely cause of a write-then-reread pattern there.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 64 },
           "id": 410,
@@ -396,7 +396,7 @@ data:
         },
         {
           "datasource": null,
-          "description": "Local blockcache capacity pressure by node: juicefs_cache_evict counts blocks explicitly evicted by the normal LRU-style cache policy as it reclaims space, while juicefs_cache_drop counts blocks dropped due to errors or the disk being full. A steady evict rate under a full cache is expected churn; any sustained drop rate means the gateway couldn't even complete a cache write on that node (disk full or I/O error) and is worth paging on, since it degrades to uncached reads on every miss (see 'Network Transfer Rate to Object Store by Node' below for the resulting backend traffic).",
+          "description": "Local blockcache capacity pressure by node: evict is normal LRU reclaim churn, drop means the gateway failed to write to cache (disk full or I/O error) - worth paging on, since misses then fall back to uncached reads (see Network Transfer Rate panel).",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 24, "x": 0, "y": 72 },
           "id": 413,
@@ -410,7 +410,7 @@ data:
         },
         {
           "datasource": { "type": "loki", "uid": "loki" },
-          "description": "Raw juicefs-s3-gateway pod logs (kleinkram's actual JuiceFS data path - already shipped to Loki by Alloy's 'all_pods' pipeline in apps/alloy/values.yaml, no new infra needed). At the default log level this mostly shows startup/connection/warning lines. The gateway serves inbound S3 API calls keyed by real object/file path (e.g. GetObject on 'data/some-file.bag') but talks to SeaweedFS using internal chunk/slice keys that aren't human-readable paths - so the two aren't directly joinable from metrics alone. To correlate 'this upload caused that backend re-fetch', add 'debug' to apps/juicefs-s3-gateway/values.yaml's options (noisier, costs more Loki storage - ask before enabling) and watch for an inbound GetObject on a path lining up in time with a GET spike on the Average Object Request Size/Request Count panels above.",
+          "description": "Raw juicefs-s3-gateway pod logs (already shipped to Loki via Alloy). Default log level shows mostly startup/connection/warning lines; object paths aren't joinable to SeaweedFS chunk keys from metrics alone. To correlate an upload with a backend re-fetch, enable 'debug' in values.yaml (noisier, costs more Loki storage - ask first) and watch for a GetObject lining up with a GET spike above.",
           "fieldConfig": { "defaults": {}, "overrides": [] },
           "gridPos": { "h": 10, "w": 24, "x": 0, "y": 80 },
           "id": 412,
@@ -599,11 +599,27 @@ data:
           ],
           "title": "Object Store Request Latency (p95) by Node",
           "type": "timeseries"
+        },
+        {
+          "datasource": null,
+          "description": "Per-pod disk IO (cAdvisor container_fs_reads/writes_bytes_total, joined to kube_pod_info for the node) alongside per-node disk IO (node-exporter's node_disk_read/written_bytes_total by instance+device).",
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "Bps" }, "overrides": [] },
+          "gridPos": { "h": 9, "w": 24, "x": 0, "y": 134 },
+          "id": 703,
+          "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [
+            { "expr": "sum(rate(container_fs_reads_bytes_total{container!=\"\"}[5m]) * on(namespace, pod) group_left(node) kube_pod_info) by (pod, node)", "legendFormat": "{{pod}} ({{node}}) pod read", "refId": "A" },
+            { "expr": "sum(rate(container_fs_writes_bytes_total{container!=\"\"}[5m]) * on(namespace, pod) group_left(node) kube_pod_info) by (pod, node)", "legendFormat": "{{pod}} ({{node}}) pod write", "refId": "B" },
+            { "expr": "sum(rate(node_disk_read_bytes_total[5m])) by (instance, device)", "legendFormat": "{{instance}} ({{device}}) node read", "refId": "C" },
+            { "expr": "sum(rate(node_disk_written_bytes_total[5m])) by (instance, device)", "legendFormat": "{{instance}} ({{device}}) node write", "refId": "D" }
+          ],
+          "title": "Pod & Node Disk IO",
+          "type": "timeseries"
         }
       ],
       "refresh": "30s",
       "schemaVersion": 39,
-      "tags": ["kleinkram", "kubernetes", "baganto"],
+      "tags": ["kleinkram", "kubernetes"],
       "templating": { "list": [] },
       "time": { "from": "now-6h", "to": "now" },
       "timepicker": {},
