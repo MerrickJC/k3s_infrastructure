@@ -128,14 +128,3 @@ grafana:
             matcherRegex: 'trace_id\":\"(\w+)\"'
             name: traceId
             url: '$${__value.raw}'
-
-loki:
-  chunksCache:
-    allocatedMemory: 2048
-    resources:
-      limits:
-        memory: 2.5Gi
-      requests:
-        cpu: 100m
-        memory: 2.5Gi
-

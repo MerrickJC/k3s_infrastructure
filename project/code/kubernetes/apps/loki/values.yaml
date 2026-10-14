@@ -52,6 +52,17 @@ loki:
     retention_enabled: true
     delete_request_store: filesystem
 
+  chunksCache:
+    allocatedMemory: 2048
+    resources:
+      limits:
+        memory: 2.5Gi
+      requests:
+        cpu: 100m
+        memory: 2.5Gi
+
+
+
 # loki-canary is a DaemonSet and needs to keep running on the
 # kleinkram-actions node pool once it's tainted
 lokiCanary:
