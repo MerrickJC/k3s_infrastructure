@@ -30,7 +30,7 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: experiment-1-trigger-missions
+  name: experiment-2-trigger-all-missions
   namespace: kleinkram
 spec:
   schedule: "*/15 * * * *"
