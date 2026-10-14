@@ -105,3 +105,4 @@ kueue:
 
 locality:
   nodeLabelSelector: merrickcampbell.au/node-role=kleinkram-actions
+  tierSizes: '1,2,3'

@@ -15,7 +15,10 @@ managerConfig:
       frameworks:
         - pod
     waitForPodsReady:
-      enable: false
+      enable: true
+      timeout: 1m
+      recoveryTimeout: 0s      # don't evict a pod that was Ready and later becomes not Ready
+      blockAdmission: false
     # Exports metrics
     metrics:
       enableClusterQueueResources: true
