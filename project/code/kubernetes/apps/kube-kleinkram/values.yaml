@@ -98,11 +98,11 @@ kueue:
           effect: NoSchedule
   quota:
     cpu:
-      cpu: '6'
-      memory: 12Gi
+      cpu: '9'
+      memory: 18Gi
     gpu:
       nvidiaGpu: '2'
 
 locality:
   nodeLabelSelector: merrickcampbell.au/node-role=kleinkram-actions
-  tierSizes: '1,2,3'
+  tierSizes: '1,1,1,2,3'
