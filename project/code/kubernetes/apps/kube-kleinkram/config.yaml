@@ -11,7 +11,7 @@ hasManifests: true
 helmGit:
   repoURL: git@github.com:MerrickJC/kube_kleinkram.git
   path: helm/kleinkram
-  targetRevision: v1.1.3
+  targetRevision: v1.1.4
 
 # The chart's Deployment is scaled by an HPA, so we need to ignore the 
 # replicas field or else ArgoCD and the HPA fight over spec.replicas
