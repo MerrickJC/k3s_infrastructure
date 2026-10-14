@@ -640,18 +640,43 @@ data:
         },
         {
           "datasource": null,
-          "description": "Per-pod disk IO (cAdvisor) alongside per-node disk IO (node-exporter).",
+          "description": "Per-pod disk IO (cAdvisor).",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "Bps" }, "overrides": [] },
-          "gridPos": { "h": 9, "w": 24, "x": 0, "y": 150 },
+          "gridPos": { "h": 9, "w": 12, "x": 0, "y": 150 },
           "id": 703,
           "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [
             { "expr": "sum(rate(container_fs_reads_bytes_total{container!=\"\"}[5m]) * on(namespace, pod) group_left(node) kube_pod_info) by (pod, node)", "legendFormat": "{{pod}} ({{node}}) pod read", "refId": "A" },
-            { "expr": "sum(rate(container_fs_writes_bytes_total{container!=\"\"}[5m]) * on(namespace, pod) group_left(node) kube_pod_info) by (pod, node)", "legendFormat": "{{pod}} ({{node}}) pod write", "refId": "B" },
-            { "expr": "sum(rate(node_disk_read_bytes_total[5m])) by (instance, device)", "legendFormat": "{{instance}} ({{device}}) node read", "refId": "C" },
-            { "expr": "sum(rate(node_disk_written_bytes_total[5m])) by (instance, device)", "legendFormat": "{{instance}} ({{device}}) node write", "refId": "D" }
+            { "expr": "sum(rate(container_fs_writes_bytes_total{container!=\"\"}[5m]) * on(namespace, pod) group_left(node) kube_pod_info) by (pod, node)", "legendFormat": "{{pod}} ({{node}}) pod write", "refId": "B" }
           ],
-          "title": "Pod & Node Disk IO",
+          "title": "Pod Disk IO",
+          "type": "timeseries"
+        },
+        {
+          "datasource": null,
+          "description": "Per-node disk IO (node-exporter).",
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "Bps" }, "overrides": [] },
+          "gridPos": { "h": 9, "w": 12, "x": 12, "y": 150 },
+          "id": 705,
+          "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [
+            { "expr": "sum(rate(node_disk_read_bytes_total[5m])) by (instance, device)", "legendFormat": "{{instance}} ({{device}}) node read", "refId": "A" },
+            { "expr": "sum(rate(node_disk_written_bytes_total[5m])) by (instance, device)", "legendFormat": "{{instance}} ({{device}}) node write", "refId": "B" }
+          ],
+          "title": "Node Disk IO",
+          "type": "timeseries"
+        },
+        {
+          "datasource": null,
+          "description": "Per Action run, the 1-indexed position of the node it actually landed on within the ranked node order embedded in the Workflow's podSpecPatch ('other' = landed outside the ranked list entirely, 'unknown' = the scheduled node couldn't be resolved). Rank is a fixed-cardinality label, not a node name or action_run_uuid, so this is safe to leave running indefinitely. Needs the queue-consumer ServiceMonitor in apps/kube-kleinkram/observability.yaml to actually be scraping kleinkram_action_locality_landed_rank_total (see WorkflowWatchService.recordLocalityLandedRank). For per-run drill-down, use Loki logs keyed by the action_run_uuid pod label instead.",
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "bars", "fillOpacity": 60, "lineWidth": 1, "stacking": { "mode": "normal" } }, "unit": "short" }, "overrides": [] },
+          "gridPos": { "h": 9, "w": 24, "x": 0, "y": 159 },
+          "id": 706,
+          "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [
+            { "expr": "sum by (rank) (increase(kleinkram_action_locality_landed_rank_total[1h]))", "legendFormat": "rank {{rank}}", "refId": "A" }
+          ],
+          "title": "Action Pod Scheduling Locality (landed rank, per hour)",
           "type": "timeseries"
         }
       ],

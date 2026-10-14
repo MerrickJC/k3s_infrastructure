@@ -48,3 +48,16 @@ spec:
       app.kubernetes.io/component: api-server
   endpoints:
     - port: "9464"
+---
+# Scrapes kleinkram_action_locality_landed_rank_total, exposed on queue-consumer port 3000
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kleinkram-queue-consumer
+  namespace: kleinkram
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: queue-consumer
+  endpoints:
+    - port: "3000"
