@@ -38,7 +38,7 @@ data:
         },
         {
           "datasource": null,
-          "description": "job label regex is a best guess until confirmed against kubectl get servicemonitor,podmonitor -A on a live cluster",
+          "description": "job label regex unverified against a live target.",
           "fieldConfig": {
             "defaults": {
               "mappings": [
@@ -134,7 +134,7 @@ data:
         },
         {
           "datasource": null,
-          "description": "Per-node up check for the juicefs-s3-gateway DaemonSet (apps/juicefs-s3-gateway/manifest.yaml) - one pod per node, replacing the old juicefs CSI driver/mount Deployment entirely (that app and its own dashboard were deleted outright when the gateway moved to a DaemonSet). min() so this only reads 'Up' once every node's gateway pod is actually running.",
+          "description": "min() so this only reads 'Up' once every node's gateway pod (DaemonSet, one per node) is running.",
           "fieldConfig": {
             "defaults": {
               "mappings": [
@@ -223,13 +223,13 @@ data:
 
         {
           "datasource": null,
-          "description": "Count of currently-running Argo Workflow pods per node, scoped to the kleinkram-actions namespace (Kleinkram's CI/CD Actions runner workflows, as opposed to any other Argo Workflows namespace in the cluster). Same label-allowlist requirement as 'Argo Workflow Pod Placement by Node' above: needs apps/kube-prometheus-stack/values.yaml's kube-state-metrics extraArgs (--metric-labels-allowlist) exposing 'workflows.argoproj.io/workflow' on kube_pod_labels, or this stays empty.",
+          "description": "Running Argo Workflow pods per node, scoped to the kleinkram-actions namespace. Needs kube-state-metrics' --metric-labels-allowlist exposing workflows.argoproj.io/workflow on kube_pod_labels (apps/kube-prometheus-stack/values.yaml).",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 24, "x": 0, "y": 22 },
           "id": 704,
           "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [
-            { "expr": "count(kube_pod_status_phase{namespace=\"kleinkram-actions\", phase=\"Running\"} == 1 * on(namespace, pod) group_left() kube_pod_labels{label_workflows_argoproj_io_workflow!=\"\"} * on(namespace, pod) group_left(node) kube_pod_info) by (node)", "legendFormat": "{{node}}", "refId": "A" }
+            { "expr": "count((kube_pod_status_phase{namespace=\"kleinkram-actions\", phase=\"Running\"} == 1) * on(namespace, pod) group_left() kube_pod_labels{label_workflows_argoproj_io_workflow!=\"\"} * on(namespace, pod) group_left(node) kube_pod_info) by (node)", "legendFormat": "{{node}}", "refId": "A" }
           ],
           "title": "Argo Workflow Pods Running per Node (kleinkram-actions)",
           "type": "timeseries"
@@ -264,7 +264,7 @@ data:
         },
         {
           "datasource": null,
-          "description": "Covers both kleinkram-cluster-queue (kleinkram Actions, cpu-default/gpu-default flavors) and experiment-execution (experiment-burst flavor). Requires kueue's metrics.enableClusterQueueResources flag.",
+          "description": "Covers kleinkram-cluster-queue (cpu-default/gpu-default) and experiment-execution (experiment-burst). Requires kueue's metrics.enableClusterQueueResources flag.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 39 },
           "id": 303,
@@ -278,7 +278,7 @@ data:
         },
         {
           "datasource": null,
-          "description": "Label name (local_queue/name) unverified until confirmed against a live target - kleinkram's Actions LocalQueue is named kleinkram-actions.",
+          "description": "local_queue/name label unverified against a live target; kleinkram's Actions LocalQueue is named kleinkram-actions.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 12, "x": 12, "y": 39 },
           "id": 304,
@@ -298,7 +298,7 @@ data:
         },
         {
           "datasource": null,
-          "description": "Local blockcache held by each JuiceFS gateway pod, one line per node since the gateway is a DaemonSet with an independent cache per node - not a cross-replica cache-miss symptom. A line flatlining near zero after uploads points to block-size cache bypass; see the Network Transfer Rate panel below.",
+          "description": "One line per node (DaemonSet, independent cache per node). A line flatlining near zero after uploads indicates block-size cache bypass - see Network Transfer Rate panel.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 48 },
           "id": 406,
@@ -309,7 +309,7 @@ data:
         },
         {
           "datasource": null,
-          "description": "Per-node cache hit ratio (DaemonSet gateway, independent cache per node). A node persistently lower than its peers points at a node-specific cause - cold cache after a reschedule, disk nearing the eviction threshold, or different traffic - not a gateway-wide issue.",
+          "description": "A node persistently lower than its peers points to a node-specific cause (cold cache, disk nearing eviction threshold, different traffic) rather than a gateway-wide issue.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "max": 1, "min": 0, "unit": "percentunit" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 12, "x": 12, "y": 48 },
           "id": 403,
@@ -320,7 +320,7 @@ data:
         },
         {
           "datasource": null,
-          "description": "Broken out by node (DaemonSet gateway) so a node-specific connectivity problem to the SeaweedFS backend - rather than a backend-wide outage - shows up as one line spiking instead of all of them.",
+          "description": "Broken out by node so a node-specific connectivity problem shows up as one line spiking, rather than being averaged into a backend-wide signal.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 56 },
           "id": 404,
@@ -331,7 +331,7 @@ data:
         },
         {
           "datasource": null,
-          "description": "Real network bytes per node to/from SeaweedFS, broken out per node (DaemonSet, independent cache per node) so backend re-fetches aren't averaged away. A PUT immediately followed by a same-sized GET on the same node is the write-then-reread pattern: writes at or above the filesystem's block size (4MiB default, unset in values.yaml) bypass the local cache entirely, so most ROS bag uploads are guaranteed cache misses on read-back.",
+          "description": "A PUT immediately followed by a same-sized GET on the same node is the write-then-reread pattern: writes at or above the filesystem's block size (4MiB default) bypass the local cache, so most ROS bag uploads are guaranteed cache misses on read-back.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "Bps" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 12, "x": 12, "y": 56 },
           "id": 407,
@@ -345,7 +345,7 @@ data:
         },
         {
           "datasource": null,
-          "description": "Total bytes downloaded from the object store over the dashboard's selected time range - the actual network cost of cache misses.",
+          "description": "Total bytes downloaded from the object store over the selected time range - the network cost of cache misses.",
           "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 64 },
           "id": 408,
@@ -356,7 +356,7 @@ data:
         },
         {
           "datasource": null,
-          "description": "Total bytes uploaded to the object store over the dashboard's selected time range.",
+          "description": "Total bytes uploaded to the object store over the selected time range.",
           "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 12, "x": 12, "y": 64 },
           "id": 409,
@@ -367,7 +367,7 @@ data:
         },
         {
           "datasource": null,
-          "description": "Average bytes per object-store request by node. An average PUT size near the 4MiB block size (see Network Transfer Rate panel) confirms uploads on that node are bypassing the local cache - the likely cause of a write-then-reread pattern there.",
+          "description": "An average PUT size near the 4MiB block size confirms uploads on that node bypass the local cache - the likely cause of a write-then-reread pattern.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 72 },
           "id": 410,
@@ -381,7 +381,7 @@ data:
         },
         {
           "datasource": null,
-          "description": "Request counts (not bytes) by method and node. A high GET count with small average size (see panel to the left) on a given node points at many small/partial reads on that node re-fetching the same recently-written blocks rather than one big re-transfer.",
+          "description": "A high GET count with small average size points to many small/partial reads re-fetching recently-written blocks, rather than one big re-transfer.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "reqps" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 12, "x": 12, "y": 72 },
           "id": 411,
@@ -395,7 +395,7 @@ data:
         },
         {
           "datasource": null,
-          "description": "Local blockcache capacity pressure by node: evict is normal LRU reclaim churn, drop means the gateway failed to write to cache (disk full or I/O error) - worth paging on, since misses then fall back to uncached reads (see Network Transfer Rate panel).",
+          "description": "evict is normal LRU reclaim churn; drop means the gateway failed to write to cache (disk full or I/O error) - worth paging on, since misses then fall back to uncached reads.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 24, "x": 0, "y": 80 },
           "id": 413,
@@ -409,7 +409,7 @@ data:
         },
         {
           "datasource": { "type": "loki", "uid": "loki" },
-          "description": "Raw juicefs-s3-gateway pod logs (already shipped to Loki via Alloy). Default log level shows mostly startup/connection/warning lines; object paths aren't joinable to SeaweedFS chunk keys from metrics alone. To correlate an upload with a backend re-fetch, enable 'debug' in values.yaml (noisier, costs more Loki storage - ask first) and watch for a GetObject lining up with a GET spike above.",
+          "description": "Default log level shows mostly startup/connection/warning lines. To correlate an upload with a backend re-fetch, enable 'debug' in values.yaml (noisier, costs more Loki storage - ask first) and watch for a GetObject lining up with a GET spike above.",
           "fieldConfig": { "defaults": {}, "overrides": [] },
           "gridPos": { "h": 10, "w": 24, "x": 0, "y": 88 },
           "id": 412,
@@ -429,7 +429,7 @@ data:
         },
         {
           "datasource": null,
-          "description": "Backs zot-registry, argo-workflows and juicefs buckets. Needs global.seaweedfs.monitoring.enabled: true (apps/seaweedfs/values.yaml).",
+          "description": "Covers the zot-registry, argo-workflows and juicefs buckets. Requires global.seaweedfs.monitoring.enabled: true (apps/seaweedfs/values.yaml, already set).",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 99 },
           "id": 501,
@@ -483,7 +483,7 @@ data:
         },
         {
           "datasource": null,
-          "description": "Real network bytes in/out of each S3 bucket (SeaweedFS_s3_bucket_traffic_*_bytes_total) - this is the actual data SeaweedFS is moving for Kleinkram, as opposed to Bucket Logical Size above which is data at rest.",
+          "description": "Real network bytes in/out per bucket, as opposed to Bucket Logical Size above which is data at rest.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "Bps" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 12, "x": 0, "y": 115 },
           "id": 506,
@@ -497,7 +497,7 @@ data:
         },
         {
           "datasource": null,
-          "description": "Total bytes received into S3 buckets over the dashboard's selected time range.",
+          "description": "Total bytes received into S3 buckets over the selected time range.",
           "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 6, "x": 12, "y": 115 },
           "id": 507,
@@ -508,7 +508,7 @@ data:
         },
         {
           "datasource": null,
-          "description": "Total bytes sent out of S3 buckets over the dashboard's selected time range.",
+          "description": "Total bytes sent out of S3 buckets over the selected time range.",
           "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 6, "x": 18, "y": 115 },
           "id": 508,
@@ -528,7 +528,7 @@ data:
         },
         {
           "datasource": null,
-          "description": "VERIFY: exact cnpg_collector_* metric name for database size wasn't confirmed from docs alone - check the postgres pod's :9187/metrics output once the new PodMonitor (apps/postgresql/observability.yaml) is live and correct this query if needed.",
+          "description": "VERIFY: cnpg_collector_* metric name for database size unconfirmed against live :9187/metrics output (apps/postgresql/observability.yaml provides the PodMonitor).",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 8, "x": 0, "y": 124 },
           "id": 601,
@@ -539,7 +539,7 @@ data:
         },
         {
           "datasource": null,
-          "description": "VERIFY: exact cnpg_collector_* metric name for backend/connection count wasn't confirmed from docs alone.",
+          "description": "VERIFY: cnpg_collector_* metric name for connection count unconfirmed against a live target.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
           "gridPos": { "h": 8, "w": 8, "x": 8, "y": 124 },
           "id": 602,
@@ -569,7 +569,7 @@ data:
         },
         {
           "datasource": null,
-          "description": "Live placement of currently-running Argo Workflow pods, one row per pod. Needs apps/kube-prometheus-stack/values.yaml's kube-state-metrics extraArgs (--metric-labels-allowlist) to expose Argo's 'workflows.argoproj.io/workflow'/'completed' pod labels on kube_pod_labels - without that, this table stays empty. Joins kube_pod_labels (which carries the workflow name) against kube_pod_info (which carries the node) on namespace+pod.",
+          "description": "One row per running Argo Workflow pod. Needs kube-state-metrics' --metric-labels-allowlist exposing workflows.argoproj.io/workflow on kube_pod_labels (apps/kube-prometheus-stack/values.yaml).",
           "fieldConfig": { "defaults": {}, "overrides": [] },
           "gridPos": { "h": 9, "w": 12, "x": 0, "y": 133 },
           "id": 701,
@@ -587,7 +587,7 @@ data:
         },
         {
           "datasource": null,
-          "description": "p95 round-trip latency each gateway node sees talking to SeaweedFS, independent of throughput. A node with persistently higher latency than its peers (while serving similar request sizes/counts - see panels above) points at a node-specific network path problem to the object store rather than a cache-algorithm one. Needs apps/juicefs-s3-gateway's ServiceMonitor relabeling (node label) to be live.",
+          "description": "A node with persistently higher p95 latency than its peers points to a network-path problem to the object store, not a cache-algorithm one. Needs apps/juicefs-s3-gateway's ServiceMonitor 'node' relabeling.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "s" }, "overrides": [] },
           "gridPos": { "h": 9, "w": 12, "x": 12, "y": 133 },
           "id": 702,
@@ -601,7 +601,7 @@ data:
         },
         {
           "datasource": null,
-          "description": "Per-pod disk IO (cAdvisor container_fs_reads/writes_bytes_total, joined to kube_pod_info for the node) alongside per-node disk IO (node-exporter's node_disk_read/written_bytes_total by instance+device).",
+          "description": "Per-pod disk IO (cAdvisor) alongside per-node disk IO (node-exporter).",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "Bps" }, "overrides": [] },
           "gridPos": { "h": 9, "w": 24, "x": 0, "y": 142 },
           "id": 703,
