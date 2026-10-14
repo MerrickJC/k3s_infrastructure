@@ -96,3 +96,12 @@ kueue:
           operator: Equal
           value: kleinkram-actions
           effect: NoSchedule
+  quota:
+    cpu:
+      cpu: '6'
+      memory: 12Gi
+    gpu:
+      nvidiaGpu: '2'
+
+locality:
+  nodeLabelSelector: merrickcampbell.au/node-role=kleinkram-actions
