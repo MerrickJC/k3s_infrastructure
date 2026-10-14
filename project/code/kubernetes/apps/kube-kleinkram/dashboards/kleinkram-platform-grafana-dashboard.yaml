@@ -264,23 +264,62 @@ data:
         },
         {
           "datasource": null,
-          "description": "Covers kleinkram-cluster-queue (cpu-default/gpu-default) and experiment-execution (experiment-burst). Requires kueue's metrics.enableClusterQueueResources flag.",
+          "description": "Covers kleinkram-cluster-queue (cpu-default/gpu-default) and experiment-execution (experiment-burst). Requires kueue's metrics.enableClusterQueueResources flag. Split one panel per resource since cpu/memory/ephemeral-storage/gpu are different orders of magnitude and don't read on a shared axis.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 39 },
+          "gridPos": { "h": 8, "w": 6, "x": 0, "y": 39 },
           "id": 303,
-          "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [
-            { "expr": "sum(kueue_cluster_queue_resource_usage) by (cluster_queue, resource)", "legendFormat": "{{cluster_queue}} {{resource}} used", "refId": "A" },
-            { "expr": "sum(kueue_cluster_queue_nominal_quota) by (cluster_queue, resource)", "legendFormat": "{{cluster_queue}} {{resource}} quota", "refId": "B" }
+            { "expr": "sum(kueue_cluster_queue_resource_usage{resource=\"cpu\"}) by (cluster_queue)", "legendFormat": "{{cluster_queue}} used", "refId": "A" },
+            { "expr": "sum(kueue_cluster_queue_nominal_quota{resource=\"cpu\"}) by (cluster_queue)", "legendFormat": "{{cluster_queue}} quota", "refId": "B" }
           ],
-          "title": "ClusterQueue Resource Usage vs. Nominal Quota",
+          "title": "ClusterQueue CPU Usage vs. Nominal Quota",
+          "type": "timeseries"
+        },
+        {
+          "datasource": null,
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 6, "x": 6, "y": 39 },
+          "id": 305,
+          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [
+            { "expr": "sum(kueue_cluster_queue_resource_usage{resource=\"memory\"}) by (cluster_queue)", "legendFormat": "{{cluster_queue}} used", "refId": "A" },
+            { "expr": "sum(kueue_cluster_queue_nominal_quota{resource=\"memory\"}) by (cluster_queue)", "legendFormat": "{{cluster_queue}} quota", "refId": "B" }
+          ],
+          "title": "ClusterQueue Memory Usage vs. Nominal Quota",
+          "type": "timeseries"
+        },
+        {
+          "datasource": null,
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 6, "x": 12, "y": 39 },
+          "id": 306,
+          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [
+            { "expr": "sum(kueue_cluster_queue_resource_usage{resource=\"ephemeral-storage\"}) by (cluster_queue)", "legendFormat": "{{cluster_queue}} used", "refId": "A" },
+            { "expr": "sum(kueue_cluster_queue_nominal_quota{resource=\"ephemeral-storage\"}) by (cluster_queue)", "legendFormat": "{{cluster_queue}} quota", "refId": "B" }
+          ],
+          "title": "ClusterQueue Ephemeral Storage Usage vs. Nominal Quota",
+          "type": "timeseries"
+        },
+        {
+          "datasource": null,
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
+          "gridPos": { "h": 8, "w": 6, "x": 18, "y": 39 },
+          "id": 307,
+          "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
+          "targets": [
+            { "expr": "sum(kueue_cluster_queue_resource_usage{resource=\"nvidia.com/gpu\"}) by (cluster_queue)", "legendFormat": "{{cluster_queue}} used", "refId": "A" },
+            { "expr": "sum(kueue_cluster_queue_nominal_quota{resource=\"nvidia.com/gpu\"}) by (cluster_queue)", "legendFormat": "{{cluster_queue}} quota", "refId": "B" }
+          ],
+          "title": "ClusterQueue GPU Usage vs. Nominal Quota",
           "type": "timeseries"
         },
         {
           "datasource": null,
           "description": "local_queue/name label unverified against a live target; kleinkram's Actions LocalQueue is named kleinkram-actions.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 39 },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 47 },
           "id": 304,
           "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "sum(kueue_local_queue_pending_workloads) by (cluster_queue, name)", "legendFormat": "{{name}}", "refId": "A" } ],
@@ -290,7 +329,7 @@ data:
 
         {
           "collapsed": false,
-          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 47 },
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 55 },
           "id": 400,
           "panels": [],
           "title": "JuiceFS",
@@ -300,7 +339,7 @@ data:
           "datasource": null,
           "description": "One line per node (DaemonSet, independent cache per node). A line flatlining near zero after uploads indicates block-size cache bypass - see Network Transfer Rate panel.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 48 },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 56 },
           "id": 406,
           "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "sum(juicefs_blockcache_bytes) by (instance, node, mp, vol_name)", "legendFormat": "{{node}} ({{vol_name}})", "refId": "A" } ],
@@ -311,7 +350,7 @@ data:
           "datasource": null,
           "description": "A node persistently lower than its peers points to a node-specific cause (cold cache, disk nearing eviction threshold, different traffic) rather than a gateway-wide issue.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "max": 1, "min": 0, "unit": "percentunit" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 48 },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 56 },
           "id": 403,
           "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "sum(rate(juicefs_blockcache_hits[5m])) by (node, vol_name) / (sum(rate(juicefs_blockcache_hits[5m])) by (node, vol_name) + sum(rate(juicefs_blockcache_miss[5m])) by (node, vol_name))", "legendFormat": "{{node}} ({{vol_name}})", "refId": "A" } ],
@@ -322,7 +361,7 @@ data:
           "datasource": null,
           "description": "Broken out by node so a node-specific connectivity problem shows up as one line spiking, rather than being averaged into a backend-wide signal.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 56 },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 64 },
           "id": 404,
           "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "sum(rate(juicefs_object_request_errors[5m])) by (node, vol_name)", "legendFormat": "{{node}} ({{vol_name}})", "refId": "A" } ],
@@ -333,7 +372,7 @@ data:
           "datasource": null,
           "description": "A PUT immediately followed by a same-sized GET on the same node is the write-then-reread pattern: writes at or above the filesystem's block size (4MiB default) bypass the local cache, so most ROS bag uploads are guaranteed cache misses on read-back.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "Bps" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 56 },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 64 },
           "id": 407,
           "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [
@@ -347,7 +386,7 @@ data:
           "datasource": null,
           "description": "Total bytes downloaded from the object store over the selected time range - the network cost of cache misses.",
           "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 64 },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 72 },
           "id": 408,
           "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "center", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
           "targets": [ { "expr": "sum(increase(juicefs_object_request_data_bytes{method=\"GET\"}[$__range]))", "refId": "A" } ],
@@ -358,7 +397,7 @@ data:
           "datasource": null,
           "description": "Total bytes uploaded to the object store over the selected time range.",
           "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 64 },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 72 },
           "id": 409,
           "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "center", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
           "targets": [ { "expr": "sum(increase(juicefs_object_request_data_bytes{method=\"PUT\"}[$__range]))", "refId": "A" } ],
@@ -369,7 +408,7 @@ data:
           "datasource": null,
           "description": "An average PUT size near the 4MiB block size confirms uploads on that node bypass the local cache - the likely cause of a write-then-reread pattern.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 72 },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 80 },
           "id": 410,
           "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [
@@ -383,7 +422,7 @@ data:
           "datasource": null,
           "description": "A high GET count with small average size points to many small/partial reads re-fetching recently-written blocks, rather than one big re-transfer.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "reqps" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 72 },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 80 },
           "id": 411,
           "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [
@@ -397,7 +436,7 @@ data:
           "datasource": null,
           "description": "evict is normal LRU reclaim churn; drop means the gateway failed to write to cache (disk full or I/O error) - worth paging on, since misses then fall back to uncached reads.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 80 },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 88 },
           "id": 413,
           "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [
@@ -411,7 +450,7 @@ data:
           "datasource": { "type": "loki", "uid": "loki" },
           "description": "Default log level shows mostly startup/connection/warning lines. To correlate an upload with a backend re-fetch, enable 'debug' in values.yaml (noisier, costs more Loki storage - ask first) and watch for a GetObject lining up with a GET spike above.",
           "fieldConfig": { "defaults": {}, "overrides": [] },
-          "gridPos": { "h": 10, "w": 24, "x": 0, "y": 88 },
+          "gridPos": { "h": 10, "w": 24, "x": 0, "y": 96 },
           "id": 412,
           "options": { "dedupStrategy": "none", "enableLogDetails": true, "prettifyLogMessage": false, "showTime": true, "sortOrder": "Descending", "wrapLogMessage": false },
           "targets": [ { "expr": "{namespace=\"juicefs\", pod=~\".*gateway.*\"}", "refId": "A" } ],
@@ -421,7 +460,7 @@ data:
 
         {
           "collapsed": false,
-          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 98 },
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 106 },
           "id": 500,
           "panels": [],
           "title": "SeaweedFS",
@@ -431,7 +470,7 @@ data:
           "datasource": null,
           "description": "Covers the zot-registry, argo-workflows and juicefs buckets. Requires global.seaweedfs.monitoring.enabled: true (apps/seaweedfs/values.yaml, already set).",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 99 },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 107 },
           "id": 501,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "SeaweedFS_s3_bucket_size_bytes", "legendFormat": "{{bucket}}", "refId": "A" } ],
@@ -441,7 +480,7 @@ data:
         {
           "datasource": null,
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 99 },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 107 },
           "id": 502,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "SeaweedFS_s3_bucket_object_count", "legendFormat": "{{bucket}}", "refId": "A" } ],
@@ -451,7 +490,7 @@ data:
         {
           "datasource": null,
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 107 },
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 115 },
           "id": 503,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "sum(SeaweedFS_volumeServer_total_disk_size) by (collection, type)", "legendFormat": "{{collection}} ({{type}})", "refId": "A" } ],
@@ -461,7 +500,7 @@ data:
         {
           "datasource": null,
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 107 },
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 115 },
           "id": 504,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [
@@ -474,7 +513,7 @@ data:
         {
           "datasource": null,
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "reqps" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 107 },
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 115 },
           "id": 505,
           "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "sum(rate(SeaweedFS_s3_request_total[5m])) by (type, code)", "legendFormat": "{{type}} ({{code}})", "refId": "A" } ],
@@ -485,7 +524,7 @@ data:
           "datasource": null,
           "description": "Real network bytes in/out per bucket, as opposed to Bucket Logical Size above which is data at rest.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "Bps" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 115 },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 123 },
           "id": 506,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [
@@ -499,7 +538,7 @@ data:
           "datasource": null,
           "description": "Total bytes received into S3 buckets over the selected time range.",
           "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 6, "x": 12, "y": 115 },
+          "gridPos": { "h": 8, "w": 6, "x": 12, "y": 123 },
           "id": 507,
           "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "center", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
           "targets": [ { "expr": "sum(increase(SeaweedFS_s3_bucket_traffic_received_bytes_total[$__range]))", "refId": "A" } ],
@@ -510,7 +549,7 @@ data:
           "datasource": null,
           "description": "Total bytes sent out of S3 buckets over the selected time range.",
           "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 6, "x": 18, "y": 115 },
+          "gridPos": { "h": 8, "w": 6, "x": 18, "y": 123 },
           "id": 508,
           "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "center", "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
           "targets": [ { "expr": "sum(increase(SeaweedFS_s3_bucket_traffic_sent_bytes_total[$__range]))", "refId": "A" } ],
@@ -520,7 +559,7 @@ data:
 
         {
           "collapsed": false,
-          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 123 },
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 131 },
           "id": 600,
           "panels": [],
           "title": "PostgreSQL (CNPG)",
@@ -530,7 +569,7 @@ data:
           "datasource": null,
           "description": "VERIFY: cnpg_collector_* metric name for database size unconfirmed against live :9187/metrics output (apps/postgresql/observability.yaml provides the PodMonitor).",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "bytes" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 124 },
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 132 },
           "id": 601,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "cnpg_collector_pg_database_size_bytes", "legendFormat": "{{datname}}", "refId": "A" } ],
@@ -541,7 +580,7 @@ data:
           "datasource": null,
           "description": "VERIFY: cnpg_collector_* metric name for connection count unconfirmed against a live target.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 124 },
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 132 },
           "id": 602,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "cnpg_collector_pg_stat_activity_count", "legendFormat": "{{datname}}", "refId": "A" } ],
@@ -551,7 +590,7 @@ data:
         {
           "datasource": null,
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "short" }, "overrides": [] },
-          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 124 },
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 132 },
           "id": 603,
           "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [ { "expr": "cnpg_collector_pg_wal", "legendFormat": "{{value}}", "refId": "A" } ],
@@ -561,7 +600,7 @@ data:
 
         {
           "collapsed": false,
-          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 132 },
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 140 },
           "id": 700,
           "panels": [],
           "title": "Per-Node Diagnostics",
@@ -571,7 +610,7 @@ data:
           "datasource": null,
           "description": "One row per running Argo Workflow pod. Needs kube-state-metrics' --metric-labels-allowlist exposing workflows.argoproj.io/workflow on kube_pod_labels (apps/kube-prometheus-stack/values.yaml).",
           "fieldConfig": { "defaults": {}, "overrides": [] },
-          "gridPos": { "h": 9, "w": 12, "x": 0, "y": 133 },
+          "gridPos": { "h": 9, "w": 12, "x": 0, "y": 141 },
           "id": 701,
           "options": { "showHeader": true },
           "targets": [
@@ -589,7 +628,7 @@ data:
           "datasource": null,
           "description": "A node with persistently higher p95 latency than its peers points to a network-path problem to the object store, not a cache-algorithm one. Needs apps/juicefs-s3-gateway's ServiceMonitor 'node' relabeling.",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "s" }, "overrides": [] },
-          "gridPos": { "h": 9, "w": 12, "x": 12, "y": 133 },
+          "gridPos": { "h": 9, "w": 12, "x": 12, "y": 141 },
           "id": 702,
           "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [
@@ -603,7 +642,7 @@ data:
           "datasource": null,
           "description": "Per-pod disk IO (cAdvisor) alongside per-node disk IO (node-exporter).",
           "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2 }, "unit": "Bps" }, "overrides": [] },
-          "gridPos": { "h": 9, "w": 24, "x": 0, "y": 142 },
+          "gridPos": { "h": 9, "w": 24, "x": 0, "y": 150 },
           "id": 703,
           "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true }, "tooltip": { "mode": "multi" } },
           "targets": [
