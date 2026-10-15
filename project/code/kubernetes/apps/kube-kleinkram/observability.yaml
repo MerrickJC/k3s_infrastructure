@@ -49,9 +49,10 @@ spec:
   endpoints:
     - port: "9464"
 ---
-# Scrapes kleinkram_action_locality_landed_rank_total, exposed on queue-consumer port 3000
+# Scrapes kleinkram_action_locality_landed_rank_total, exposed on queue-consumer
+# port 3000. PodMonitor since queueConsumer has no service
 apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
+kind: PodMonitor
 metadata:
   name: kleinkram-queue-consumer
   namespace: kleinkram
@@ -59,5 +60,5 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/component: queue-consumer
-  endpoints:
+  podMetricsEndpoints:
     - port: "3000"
