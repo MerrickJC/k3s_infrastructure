@@ -1,0 +1,88 @@
+# Runs trigger_all_missions.py (mirrored into experiment-2/configmap.yaml) once to
+# launch the "Migrate Data" action template across every mission in missions.txt.
+#
+# Uses the pre-built registry.direct.merrickcampbell.au/kleinkram-cli-base
+# image (has the kleinkram CLI/package already installed) from our private
+# Zot registry, via zot-pull-secret.
+#
+# Authenticates via the kleinkram CLI's own config file format rather than
+# env vars: the kleinkram-validation-credentials Secret (created directly in
+# the kleinkram namespace, NOT via GitOps/sealed-secrets) is mounted
+# read-only at /secrets/.kleinkram.json, then copied to $HOME/.kleinkram.json
+# ($HOME is /tmp) before running the script. It can't be mounted straight at
+# $HOME/.kleinkram.json: the kleinkram client rewrites that file on every
+# token refresh (save_config -> os.replace), and Secret volumes are backed by
+# a read-only symlink structure that rejects writes/renames at their mount
+# path - it fails with a Read-only/PermissionError that the client then
+# masks as a generic NotAuthenticated. Copying it onto a writable path first
+# gives it something it's actually allowed to rewrite - that writable path
+# is an emptyDir mounted at /tmp (see volumes below), not just the image's
+# own /tmp, since kleinkram-cli-base's /tmp isn't necessarily writable by
+# the arbitrary runAsUser (1000) set below.
+#
+# Starts suspended (spec.suspend: true below) so it doesn't run on every
+# apply. Trigger it manually when wanted:
+#   kubectl patch job migrate-data -n kleinkram --type=merge -p '{"spec":{"suspend":false}}'
+# config.yaml's ignoreDifferences for this Job's spec/suspend keeps ArgoCD's
+# selfHeal from reverting the patch. Once it's run to completion, flipping
+# suspend back to true and then false again will NOT re-run it - a
+# completed Job is terminal, so to run it again you need to delete it
+# (kubectl delete job migrate-data -n kleinkram) and let ArgoCD recreate it
+# from this manifest, still suspended.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate-data
+  namespace: kleinkram
+spec:
+  suspend: true
+  backoffLimit: 1
+  template:
+    spec:
+      restartPolicy: Never
+      imagePullSecrets:
+        - name: zot-pull-secret
+      containers:
+        - name: trigger-all-missions
+          image: registry.direct.merrickcampbell.au/kleinkram-cli-base:v1.1.0
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -eu
+              cp /secrets/.kleinkram.json /tmp/.kleinkram.json
+              chmod 600 /tmp/.kleinkram.json
+              exec python /scripts/trigger_all_missions.py --template "Migrate Data" --project "Driverless"
+          env:
+            - name: HOME
+              value: /tmp
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            runAsNonRoot: true
+            runAsUser: 1000
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+            - name: kleinkram-credentials
+              mountPath: /secrets
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: scripts
+          configMap:
+            name: experiment-2-trigger-all-missions-scripts
+        - name: kleinkram-credentials
+          secret:
+            secretName: kleinkram-validation-credentials
+        - name: tmp
+          emptyDir: {}

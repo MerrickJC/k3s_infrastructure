@@ -28,3 +28,10 @@ ignoreDifferences:
     name: experiment-1-trigger-missions
     jsonPointers:
       - /spec/suspend
+  # Same pattern as above, but for the one-shot migrate-data Job (see
+  # validation/migrate-data/job.yaml): starts suspended, triggered manually.
+  - group: batch
+    kind: Job
+    name: migrate-data
+    jsonPointers:
+      - /spec/suspend
