@@ -1,0 +1,92 @@
+# Runs trigger_missions.py (mirrored into configmap.yaml) every 10 minutes to
+# repeatedly launch the "CPU and Memory Test" action template across every
+# mission in missions.txt, as an ongoing load-test of kleinkram's action
+# execution path.
+#
+# Uses the pre-built registry.direct.merrickcampbell.au/kleinkram-cli-base
+# image (has the kleinkram CLI/package already installed) from our private
+# Zot registry, via zot-pull-secret.
+#
+# Authenticates via the kleinkram CLI's own config file format rather than
+# env vars: the kleinkram-validation-credentials Secret (created directly in
+# the kleinkram namespace, NOT via GitOps/sealed-secrets) is mounted
+# read-only at /secrets/.kleinkram.json, then copied to $HOME/.kleinkram.json
+# ($HOME is /tmp) before running the script. It can't be mounted straight at
+# $HOME/.kleinkram.json: the kleinkram client rewrites that file on every
+# token refresh (save_config -> os.replace), and Secret volumes are backed by
+# a read-only symlink structure that rejects writes/renames at their mount
+# path - it fails with a Read-only/PermissionError that the client then
+# masks as a generic NotAuthenticated. Copying it onto a writable path first
+# gives it something it's actually allowed to rewrite - that writable path
+# is an emptyDir mounted at /tmp (see volumes below), not just the image's
+# own /tmp, since kleinkram-cli-base's /tmp isn't necessarily writable by
+# the arbitrary runAsUser (1000) set below.
+#
+# Starts suspended (spec.suspend: true below). Enable it manually when
+# wanted: kubectl patch cronjob experiment-1-trigger-missions -n kleinkram
+# --type=merge -p '{"spec":{"suspend":false}}' (back to 'true' to stop
+# again). config.yaml's ignoreDifferences for this CronJob's spec/suspend
+# keeps ArgoCD's selfHeal from reverting the patch.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: experiment-1-trigger-missions
+  namespace: kleinkram
+spec:
+  schedule: "*/10 * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 60
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          restartPolicy: Never
+          imagePullSecrets:
+            - name: zot-pull-secret
+          containers:
+            - name: trigger-missions
+              image: registry.direct.merrickcampbell.au/kleinkram-cli-base:v0.61.1-k2-v1
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  set -eu
+                  cp /secrets/.kleinkram.json /tmp/.kleinkram.json
+                  chmod 600 /tmp/.kleinkram.json
+                  exec python /scripts/trigger_missions.py --template "CPU and Memory Test" --missions-file /scripts/missions.txt --project "Driverless"
+              env:
+                - name: HOME
+                  value: /tmp
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 200m
+                  memory: 256Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+                runAsNonRoot: true
+                runAsUser: 1000
+              volumeMounts:
+                - name: scripts
+                  mountPath: /scripts
+                  readOnly: true
+                - name: kleinkram-credentials
+                  mountPath: /secrets
+                  readOnly: true
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: scripts
+              configMap:
+                name: experiment-1-trigger-missions-scripts
+            - name: kleinkram-credentials
+              secret:
+                secretName: kleinkram-validation-credentials-k2
+            - name: tmp
+              emptyDir: {}
