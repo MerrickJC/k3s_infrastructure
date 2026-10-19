@@ -52,14 +52,14 @@ loki:
     retention_enabled: true
     delete_request_store: filesystem
 
-  chunksCache:
-    allocatedMemory: 2048
-    resources:
-      limits:
-        memory: 2.5Gi
-      requests:
-        cpu: 100m
-        memory: 2.5Gi
+chunksCache:
+  allocatedMemory: 2048
+  resources:
+    limits:
+      memory: 2.5Gi
+    requests:
+      cpu: 100m
+      memory: 2.5Gi
 
 
 
