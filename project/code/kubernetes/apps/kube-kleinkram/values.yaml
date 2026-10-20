@@ -104,6 +104,6 @@ kueue:
       nvidiaGpu: '2'
 
 locality:
-  enabled: false
+  enabled: true
   nodeLabelSelector: merrickcampbell.au/node-role=kleinkram-actions
   tierSizes: '1,1,1,2,3'
