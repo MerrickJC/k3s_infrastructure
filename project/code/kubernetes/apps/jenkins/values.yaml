@@ -28,7 +28,7 @@ controller:
     # unclassified.email-ext
     - email-ext:2038.v7b_8817a_499d9
     # appearance.pipelineGraphView
-    - pipeline-graph-view:1013.v9f83fd83c063
+    - pipeline-graph-view:1078.veb_b_b_196c25e7
     # appearance.coverage
     - code-coverage-api:4.99.0
     # unclassified.timestamper
