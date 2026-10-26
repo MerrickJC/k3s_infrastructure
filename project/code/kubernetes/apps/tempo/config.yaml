@@ -7,7 +7,7 @@ hasManifests: false
 helm:
   repoURL: https://grafana-community.github.io/helm-charts
   chart: tempo
-  targetRevision: 3.0.0
+  targetRevision: 3.2.1
 
 # Protects trace data from being wiped by an ArgoCD prune
 preventDeletion: true
