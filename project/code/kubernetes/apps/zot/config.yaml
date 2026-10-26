@@ -7,4 +7,4 @@ hasManifests: true
 helm:
   repoURL: https://zotregistry.dev/helm-charts
   chart: zot
-  targetRevision: 0.1.125
+  targetRevision: 0.1.128
