@@ -49,7 +49,7 @@ controller:
     - build-timeout:1.41
     # unclassified.injectionConfig and unclassified.enrichedSummaryConfig - Develocity/Gradle
     # Enterprise build-scan auto-injection and detection features
-    - gradle:2.19.1252.v15196b_5a_6e10
+    - gradle:2.20.1259.v6355c2b_e38c7
     # jobs (the seed job below) - Job DSL engine that turns the mounted *.groovy scripts into
     # actual folder/multibranch-pipeline job objects
     - job-dsl:3732.v9a_c49a_61a_313
