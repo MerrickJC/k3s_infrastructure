@@ -1,4 +1,4 @@
-FROM alpine:3.20
+FROM alpine:3.24
 ARG TARGETARCH
 ARG MC_RELEASE=RELEASE.2021-04-22T17-40-00Z
 RUN apk add --no-cache ca-certificates curl && \
