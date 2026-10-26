@@ -7,4 +7,4 @@ hasManifests: false
 helm:
   repoURL: https://charts.dexidp.io
   chart: dex
-  targetRevision: 0.24.1
+  targetRevision: 0.26.0
