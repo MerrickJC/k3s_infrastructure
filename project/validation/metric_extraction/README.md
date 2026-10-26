@@ -24,7 +24,7 @@ down on exit, so they're safe to run back-to-back or in parallel.
 
 Every run also saves a result to `results/`, named after the script (e.g.
 `results/01_avg_cpu_usage_cluster.json`). Scripts that issue more than one
-query (09-12) save one file per query with a suffix (e.g.
+query (09-12, 15) save one file per query with a suffix (e.g.
 `results/09_network_upload_cluster_overlay.json`, `..._external.json`).
 Re-running a script overwrites its previous result(s).
 
@@ -66,6 +66,24 @@ WINDOW_START="2026-10-09T13:00:00+10:00" WINDOW_END="2026-10-09T21:00:00+10:00" 
 | 12 | `12_network_download_per_namespace.sh` | Network download, per namespace |
 | 13 | `13_network_upload_per_pod.sh` | Network upload, per pod (labelled with node) |
 | 14 | `14_network_download_per_pod.sh` | Network download, per pod (labelled with node) |
+| 15 | `15_disk_io.sh` | Disk I/O: total/avg bytes read+written, avg IOPS (cluster-wide + per node) |
+| 16 | `16_pvc_usage.sh` | PVC usage/capacity, per namespace+claim (bytes) |
+| 17 | `17_pod_restarts_and_oom_kills.sh` | Container restarts and OOM kills, per pod |
+| 18 | `18_pod_scheduling_latency.sh` | Pod scheduling latency: avg + p99 (seconds) |
+| 19 | `19_apiserver_latency_and_errors.sh` | API server latency (avg + p99) and 5xx error rate |
+| 20 | `20_node_ready_stability.sh` | Node `Ready` condition stability, per node |
+| 21 | `21_network_errors_and_retransmits.sh` | Network interface errors + TCP retransmits |
+| 22 | `22_observability_stack_footprint.sh` | Observability stack's own CPU/memory/TSDB cost |
+| 23 | `23_avg_cpu_usage_per_pod.sh` | Average CPU usage, per pod (cores) - kleinkram / kleinkram-actions / juicefs only |
+| 24 | `24_avg_memory_usage_per_pod.sh` | Average memory usage, per pod (bytes) - kleinkram / kleinkram-actions / juicefs only |
+| 25 | `25_peak_1m_cpu_usage_per_pod.sh` | Highest 1-minute-average CPU usage, per pod - kleinkram / kleinkram-actions / juicefs only |
+| 26 | `26_peak_1m_memory_usage_per_pod.sh` | Highest 1-minute-average memory usage, per pod - kleinkram / kleinkram-actions / juicefs only |
+| 27 | `27_juicefs_seaweedfs_request_and_data_transfer.sh` | juicefs-s3-gateway request rate/totals (combined + per gateway) and consumer data transfer (per gateway); seaweedfs request rate/totals and data sent to juicefs |
+| 28 | `28_resource_requests_limits_usage_cluster.sh` | CPU/memory requests, limits and usage, whole cluster - snapshot at window start + window average |
+| 29 | `29_resource_requests_limits_usage_per_node.sh` | CPU/memory requests, limits and usage, per node - snapshot at window start + window average |
+| 30 | `30_resource_requests_limits_usage_per_namespace.sh` | CPU/memory requests, limits and usage, per namespace - snapshot at window start + window average |
+| 31 | `31_kueue_cpu_default_flavor_usage.sh` | Kueue `kleinkram-cluster-queue` / `cpu-default` flavor: resource usage vs. nominal quota (cpu+memory), admitted/pending workload counts - snapshot at window start + window average |
+| 32 | `32_kueue_admitted_vs_waiting_timeseries.sh` | Kueue `kleinkram-cluster-queue`: admitted vs. pending (waiting) workload counts **over time** - a time series for plotting, not a single figure |
 
 See the comment block at the top of each script for the exact PromQL and
 the reasoning behind metric/unit choices (e.g. `container_memory_working_set_bytes`
@@ -75,41 +93,58 @@ the cluster-wide CPU figure).
 ### Caveat: node-to-node vs node-to-internet (scripts 09/10)
 
 A node's physical NIC carries both cluster-internal and internet-bound
-traffic indistinguishably at the node_exporter level. Scripts 09/10
-approximate the split by interface *name* (CNI overlay interfaces =
-node-to-node, everything else = external) and also print the raw
-per-node/per-interface breakdown so you can re-bucket by hand if your CNI
-uses different interface names than the default regex assumes.
+traffic indistinguishably at the node_exporter level, so the split is a
+heuristic based on interface *name*, not actual destination.
+
+Verified against this cluster's actual interfaces (K3s default
+flannel/VXLAN): `flannel.1` is the overlay (the decapsulated view of
+cross-node pod traffic) and goes in the node-to-node bucket; `cni0` and
+the many `veth*@...` interfaces are **excluded from both buckets** because
+they're the same pod packets viewed at an earlier hop (pod -> veth ->
+cni0 -> flannel.1 -> wire) - counting them alongside `flannel.1` or the
+physical NIC would double/triple-count the same bytes. The "external"
+bucket is whatever's left on the real NIC(s) after excluding loopback/
+bridge/veth, which is node-to-node-over-LAN traffic that isn't overlay
+(control-plane calls, etc.) plus genuine internet egress - those two still
+aren't separable from each other at this layer.
+
+Both scripts also print the raw per-node/per-interface breakdown so you
+can re-bucket by hand if your CNI uses different interface names than the
+default `OVERLAY_REGEX`/`EXCLUDE_REGEX` assume.
+
+### Caveat: node label mismatch between requests/limits and usage (script 29)
+
+kube-state-metrics' `kube_pod_container_resource_requests`/`_limits` are
+grouped by the `node` label (the Kubernetes node name), while usage falls
+back to node_exporter's `instance` label (that target's host:port) - same
+set of physical nodes, different label values. Cross-reference `kubectl
+get nodes -o wide` if you need to line the two breakdowns up row-for-row.
+
+### Script 32's output shape differs from every other script
+
+32 is the one script in this folder that answers "how did this change
+over time" rather than "what was this over the window", so it uses a new
+`prom_query_range` helper (in `_lib.sh`) instead of `prom_query`. The
+`results/*.json` it writes is `{"<labels>": [[timestamp, value], ...]}`
+per series - feed that directly to a plotting script rather than reading
+it as a single number. Resolution defaults to 30s (`RANGE_STEP` env var
+to override), matching kube-prometheus-stack's default scrape interval.
+
+### Caveat: scheduler metrics (script 18)
+
+K3s runs the scheduler embedded in the k3s binary, and its metrics
+endpoint is sometimes bound to localhost only, unreachable by kube-
+prometheus-stack's `kubeScheduler` ServiceMonitor from off-node. If 18
+comes back empty, check that target's health in Prometheus first before
+assuming the cluster has zero scheduling latency.
 
 ## Suggested additional metrics for the paper
 
-Not implemented yet - ask if you want scripts for these:
+Not implemented yet - ask if you want a script for this:
 
-- **Disk I/O** (`node_disk_read_bytes_total` / `write_bytes_total`, IOPS via
-  `node_disk_reads_completed_total`) - relevant given PostgreSQL + SeaweedFS
-  are the storage-heavy workloads here.
-- **Persistent volume usage/capacity** (`kubelet_volume_stats_used_bytes` /
-  `_capacity_bytes`) - storage headroom per PVC.
-- **Pod restart / crash counts** (`kube_pod_container_status_restarts_total`)
-  and **OOM kills** (`container_oom_events_total`) - stability during the
-  benchmark, not just resource cost.
-- **Pod startup / scheduling latency** (`kube_pod_start_time` vs creation
-  timestamp, or `scheduler_e2e_scheduling_duration_seconds`) - relevant
-  since you already instrumented scheduler scoring (`k3_scores.py`).
-- **API server latency/error rate** (`apiserver_request_duration_seconds`,
-  `apiserver_request_total{code=~"5.."}`) - control-plane health under load.
-  node count and `kube_node_status_condition` -
-  whether all nodes stayed `Ready` throughout the run.
-- **Network errors/retransmits** (`node_network_transmit_errs_total`,
-  `node_netstat_Tcp_RetransSegs`) - distinguishes "idle" from "idle but
-  struggling."
-- **Prometheus's own resource/storage footprint**
-  (`prometheus_tsdb_*`, container_memory/cpu for the `observability`
-  namespace itself) - lets you quantify the observability stack's own
-  overhead separately from the workload it's measuring.
-- **Loki ingestion rate / chunk size** if log volume during the window is
+- **Loki ingestion rate / chunk size**, if log volume during the window is
   worth reporting alongside the metrics volume.
 
-Once you have a non-idle run to compare against, the same scripts with a
-different `WINDOW_START`/`WINDOW_END` give you the under-load numbers for
-free - worth keeping that in mind when picking which of the above to add.
+Once you have a non-idle run to compare against, every script here (01-22)
+works unchanged against a different `WINDOW_START`/`WINDOW_END` - the same
+commands give you the under-load numbers for free.
