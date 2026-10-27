@@ -11,10 +11,10 @@ name: Helm app render check
 on:
   pull_request:
     paths:
-      - "project/code/kubernetes/apps/**/config.yaml"
-      - "project/code/kubernetes/apps/**/values.yaml"
-      - "!project/code/kubernetes/apps/jenkins/**"
-      - "!project/code/kubernetes/apps/example/**"
+      - "kubernetes/apps/**/config.yaml"
+      - "kubernetes/apps/**/values.yaml"
+      - "!kubernetes/apps/jenkins/**"
+      - "!kubernetes/apps/example/**"
 
 concurrency:
   group: helm-app-render-check-${{ github.ref }}
@@ -42,4 +42,4 @@ jobs:
       - run: pip install pyyaml
 
       - name: helm template every app
-        run: python .github/scripts/render_helm_apps.py project/code/kubernetes/apps
+        run: python .github/scripts/render_helm_apps.py kubernetes/apps

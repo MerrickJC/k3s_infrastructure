@@ -23,7 +23,7 @@ permissions:
   issues: write
 
 env:
-  JENKINS_VALUES: project/code/kubernetes/apps/jenkins/values.yaml
+  JENKINS_VALUES: kubernetes/apps/jenkins/values.yaml
   ISSUE_TITLE: "Jenkins plugin security warnings"
 
 jobs:

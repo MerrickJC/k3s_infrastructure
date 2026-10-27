@@ -8,7 +8,6 @@ resources:
   - https://raw.githubusercontent.com/argoproj/argo-cd/v3.5.2/manifests/install.yaml
   - ./argocd-manifest.yaml
   - ./unified-automation.yaml
-  - ./repo-sealed-secret.yaml
   - ./kube-kleinkram-repository-secret.yaml
 
 patches:

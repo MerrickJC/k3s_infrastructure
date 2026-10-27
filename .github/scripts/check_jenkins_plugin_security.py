@@ -98,7 +98,7 @@ def main():
 
     lines = [
         "The following pinned Jenkins plugins (`controller.additionalPlugins` in "
-        "`project/code/kubernetes/apps/jenkins/values.yaml`) have a published security "
+        "`kubernetes/apps/jenkins/values.yaml`) have a published security "
         f"advisory affecting the currently pinned version, per the "
         f"[Jenkins Update Center]({UPDATE_CENTER_URL}):",
         "",

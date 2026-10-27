@@ -12,7 +12,7 @@ name: Jenkins JCasC validation
 on:
   pull_request:
     paths:
-      - "project/code/kubernetes/apps/jenkins/**"
+      - "kubernetes/apps/jenkins/**"
 
 concurrency:
   group: jenkins-jcasc-check-${{ github.ref }}
@@ -22,8 +22,8 @@ permissions:
   contents: read
 
 env:
-  JENKINS_VALUES: project/code/kubernetes/apps/jenkins/values.yaml
-  JENKINS_APP_CONFIG: project/code/kubernetes/apps/jenkins/config.yaml
+  JENKINS_VALUES: kubernetes/apps/jenkins/values.yaml
+  JENKINS_APP_CONFIG: kubernetes/apps/jenkins/config.yaml
   HELM_VERSION: v3.15.4
 
 jobs:

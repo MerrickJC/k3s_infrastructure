@@ -15,18 +15,18 @@ spec:
     - matrix:
         generators:
           - git:
-              repoURL: 'git@github.com:MerrickJC/MerrickCampbell_MinorThesis_ROSDatabase.git'
+              repoURL: 'https://github.com/MerrickJC/k3s_infrastructure.git'
               revision: main
               files:
-                - path: "project/code/kubernetes/apps/*/config.yaml"
+                - path: "kubernetes/apps/*/config.yaml"
                 ###########################################################################
                 ## BELOW IS A LIST OF DIRECTORIES BEING EXCLUDED FROM CREATION BY ARGOCD ##
                 ###########################################################################
-                - path: "project/code/kubernetes/apps/example/config.yaml"
+                - path: "kubernetes/apps/example/config.yaml"
                   exclude: true
           - list:
               elements:
-                - repoURL: 'git@github.com:MerrickJC/MerrickCampbell_MinorThesis_ROSDatabase.git'
+                - repoURL: 'https://github.com/MerrickJC/k3s_infrastructure.git'
                   revision: main
   # Base template must have valid YAML (no Go conditionals here).
   # templatePatch below handles conditional source assembly.
@@ -67,7 +67,7 @@ spec:
           targetRevision: '{{ .helm.targetRevision }}'
           helm:
             valueFiles:
-              - '$values/project/code/kubernetes/apps/{{ .appName }}/values.yaml'
+              - '$values/kubernetes/apps/{{ .appName }}/values.yaml'
             ignoreMissingValueFiles: true
         - repoURL: '{{ .repoURL }}'
           targetRevision: '{{ .revision }}'
@@ -79,7 +79,7 @@ spec:
           targetRevision: '{{ .helmGit.targetRevision }}'
           helm:
             valueFiles:
-              - '$values/project/code/kubernetes/apps/{{ .appName }}/values.yaml'
+              - '$values/kubernetes/apps/{{ .appName }}/values.yaml'
             ignoreMissingValueFiles: true
         - repoURL: '{{ .repoURL }}'
           targetRevision: '{{ .revision }}'
@@ -88,7 +88,7 @@ spec:
         {{- if (default false .hasManifests) }}
         - repoURL: '{{ .repoURL }}'
           targetRevision: '{{ .revision }}'
-          path: 'project/code/kubernetes/apps/{{ .appName }}'
+          path: 'kubernetes/apps/{{ .appName }}'
           directory:
             recurse: true
         {{- end }}

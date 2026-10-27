@@ -14,9 +14,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: 'git@github.com:MerrickJC/MerrickCampbell_MinorThesis_ROSDatabase.git'
+    repoURL: 'https://github.com/MerrickJC/k3s_infrastructure.git'
     targetRevision: main
-    path: 'project/code/kubernetes/argocd-management' # Path to the folder with kustomization.yaml
+    path: 'kubernetes/argocd-management' # Path to the folder with kustomization.yaml
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: argocd

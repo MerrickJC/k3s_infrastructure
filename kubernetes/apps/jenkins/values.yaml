@@ -154,7 +154,7 @@ controller:
         jobs:
         - script: |
             pipelineJob('seed-job') {
-                description('Provisions all other Jenkins jobs from the Job DSL scripts mounted at /var/jenkins_home/job-dsl. Source: project/code/kubernetes/apps/jenkins/job-dsl-configmap.yaml in the GitOps repo. Run manually (Build Now) - not scheduled or webhook-triggered yet.')
+                description('Provisions all other Jenkins jobs from the Job DSL scripts mounted at /var/jenkins_home/job-dsl. Source: kubernetes/apps/jenkins/job-dsl-configmap.yaml in the GitOps repo. Run manually (Build Now) - not scheduled or webhook-triggered yet.')
                 definition {
                     cps {
                         script('''
