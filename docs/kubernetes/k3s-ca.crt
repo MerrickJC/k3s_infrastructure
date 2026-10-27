@@ -1,10 +1,10 @@
-This certificate is the PUBLIC certificate for the K3s cluster hosted by
-Merrick Campbell in his house. This is mainly serving as a placeholder
-and should be replaced in future by MMS's actual K3s cluster certificate.
+This is the public certificate authority certificate for the K3s cluster
+currently backing this deployment. It's a placeholder until it's replaced
+with the certificate for MMS's own long-term K3s cluster.
 
-It is useful to store this here because developers can reference it when
-setting up their kubectl locally on their devices. This is a public certificate
-so there are no concerns about adding it to git
+Keeping it here lets developers reference it directly when setting up
+kubectl locally. It is a public certificate, so there are no concerns about
+committing it to git.
 
 -----BEGIN CERTIFICATE-----
 MIIBeDCCAR2gAwIBAgIBADAKBggqhkjOPQQDAjAjMSEwHwYDVQQDDBhrM3Mtc2Vy

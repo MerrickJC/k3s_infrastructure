@@ -3,7 +3,7 @@
 This document collects the design goals and principles that shaped this repository's
 architecture, and ties each one to a concrete, verifiable piece of implementation —
 not just a stated intention. Sources are the written rationale in `docs/` and the
-actual structure of `project/code/kubernetes/` and `.github/`.
+actual structure of `kubernetes/` and `.github/`.
 
 Each section states the principle, quotes the primary evidence for *why* it was
 adopted, and then points to the file(s) that prove it was actually built that way.
@@ -26,7 +26,7 @@ Nothing about what is deployed should require tribal knowledge or manual
 > already in the git repository." — `docs/kubernetes/deployment.md`
 
 **Proof in the implementation:**
-- `project/code/kubernetes/argocd-management/unified-automation.yaml` is an ArgoCD
+- `kubernetes/argocd-management/unified-automation.yaml` is an ArgoCD
   `ApplicationSet` with a `git` generator that walks `apps/*/config.yaml` and turns
   every match into a live `Application` — the repository *is* the cluster's
   declared state, not a side artifact of it.
@@ -52,7 +52,7 @@ out-of-band bootstrap process for the manager itself after initial setup.
 > self-managing." — `docs/kubernetes/deployment.md`
 
 **Proof in the implementation:**
-- `project/code/kubernetes/argocd-management/kustomization.yaml` pulls ArgoCD's own
+- `kubernetes/argocd-management/kustomization.yaml` pulls ArgoCD's own
   install manifest declaratively (`https://raw.githubusercontent.com/argoproj/argo-cd/v3.5.2/manifests/install.yaml`)
   alongside `unified-automation.yaml`, so ArgoCD reconciles its own version pin the
   same way it reconciles every app.
@@ -72,7 +72,7 @@ exactly one new folder — no edits to any central manifest, CI script, or
 dependency-bot config.
 
 **Proof in the implementation:**
-- `project/code/kubernetes/apps/README.md`: *"All helm charts should follow the
+- `kubernetes/apps/README.md`: *"All helm charts should follow the
   general format shown by the [example](./example/) folder"* — `apps/example/` is
   a fully-commented, placeholder-only template documenting every field a
   `config.yaml` can declare (`hasHelm`, `helmGit`, `hasManifests`, `syncOptions`,
@@ -81,8 +81,8 @@ dependency-bot config.
   hardcoded list:
   ```yaml
   files:
-    - path: "project/code/kubernetes/apps/*/config.yaml"
-    - path: "project/code/kubernetes/apps/example/config.yaml"
+    - path: "kubernetes/apps/*/config.yaml"
+    - path: "kubernetes/apps/example/config.yaml"
       exclude: true
   ```
   combined with a `goTemplate` that conditionally assembles `spec.sources` based on
@@ -111,12 +111,12 @@ without touching the rest of the system.
 > abstracted by JuiceFS." — `docs/scope.md`
 
 **Proof in the implementation:**
-- `project/code/kubernetes/apps/juicefs/` deploys the `juicefs-csi-driver` chart,
+- `kubernetes/apps/juicefs/` deploys the `juicefs-csi-driver` chart,
   exposed to consumers purely as a `StorageClass` — nothing downstream talks to the
   object store directly.
-- `project/code/kubernetes/apps/seaweedfs/` is the concrete S3-like backend
+- `kubernetes/apps/seaweedfs/` is the concrete S3-like backend
   currently plugged in behind that abstraction.
-- `project/code/kubernetes/apps/juicefs-s3-gateway/README.md`: *"Used by
+- `kubernetes/apps/juicefs-s3-gateway/README.md`: *"Used by
   `apps/kube-kleinkram` instead of talking to SeaweedFS directly"* — a second layer
   of indirection reinforcing that consumers are wired to JuiceFS's abstraction, not
   to SeaweedFS specifics. Swapping the object-store backend only requires replacing
@@ -137,7 +137,7 @@ tokens, and cross-namespace distribution are each solved independently.
 > encrypted form." — `docs/kubernetes/sealed-secrets.md`
 
 **Proof in the implementation:**
-- `project/code/kubernetes/apps/secrets/README.md`: *"Every secret's source of
+- `kubernetes/apps/secrets/README.md`: *"Every secret's source of
   truth lives in this app... and gets fanned out to other namespaces as needed.
   Three apps make this work"*:
   - `apps/secrets-sealed/` (Bitnami Sealed Secrets) — encrypted `SealedSecret`
@@ -194,7 +194,7 @@ pre-merge CI is the sole gate between a bad change and production — there is n
 post-merge staging step to catch mistakes.
 
 **Why / proof (the rationale and the mechanism are stated together in the code):**
-- `project/code/kubernetes/argocd-management/unified-automation.yaml` applies
+- `kubernetes/argocd-management/unified-automation.yaml` applies
   `syncPolicy.automated: {prune: true, selfHeal: true}` to every generated
   `Application` unconditionally — it is set once, centrally, in the shared
   template, not per app. A grep for `automated` across all `apps/*/config.yaml`
@@ -250,7 +250,7 @@ recoverable after the original team has moved on, using nothing but what's in gi
   exact setup to a new cluster, including concrete bulk-replace instructions
   (`merrickcampbell.au` → new domain; the git remote URL → new repo) — the
   portability goal is operationalized as an actual runbook, not just an aspiration.
-- `kubectl apply -k ./project/code/kubernetes/argocd-management` (documented in
+- `kubectl apply -k ./kubernetes/argocd-management` (documented in
   the root `CLAUDE.md` and the migration guide) is the entire re-bootstrap command
   once the few non-git prerequisites (OIDC flags, sealed-secrets key) are in place.
 
@@ -290,18 +290,19 @@ should scale with actual demand rather than being provisioned for peak load
 permanently.
 
 **Why:**
-> "the Jenkins server only processes a handful of pull requests per day and sits
-> idle for the rest of the time... MMS could then utilise an autoscaling cluster
-> which would scale up when Jenkins tries to schedule jobs... and scale back down
-> when nodes are no longer needed." — `docs/architecture/goals-for-mms.md`
+> The Jenkins server only processes a handful of pull requests per day and sits
+> idle the rest of the time; an autoscaling cluster that provisions nodes when
+> jobs are scheduled and scales back down once they're no longer needed avoids
+> paying for that idle time. — `docs/architecture/goals-for-mms.md`
 
 **Proof in the implementation:**
 - Jenkins agents are deployed via the Kubernetes plugin rather than as
   always-on static agents, directly implementing the scale-to-zero pattern
   described above.
-- `docs/architecture/making-things-free-for-mms.md` grounds this in a concrete,
-  costed decision ("Oracle Cloud's free tier: 2 OCPU / 12GB RAM server to run
-  forever for free") rather than treating cost-efficiency as an abstract goal.
+- `docs/architecture/making-things-free-for-mms.md` grounds this in a concrete
+  scale-to-zero mechanism (KEDA-driven bursting into paid cloud compute only
+  while a job queue has work) rather than treating cost-efficiency as an
+  abstract goal.
 
 ---
 
@@ -348,8 +349,6 @@ that enable them were designed together, not independently.
 ## Note on sourcing
 
 This document was compiled from `docs/` (the primary source of stated design
-rationale), the structure of `project/code/kubernetes/apps/` and
+rationale), the structure of `kubernetes/apps/` and
 `argocd-management/`, and `.github/` (CI workflows, scripts, and
-`renovate.json5`). The `weekly_meeting/` logs were checked and found to contain no
-populated design-rationale content — only an unfilled template and a single
-task-tracking entry — so they are not cited above.
+`renovate.json5`).

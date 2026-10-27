@@ -1,39 +1,75 @@
 # Goals For MMS
-MMS has access to the ARDC Nectar compute cloud on the Powerful tier (see https://support.ehelp.edu.au/support/solutions/articles/6000271206). This provides the team with 8000 Service Units (SU) per year, which is the equivalent of running a 32 vCPU, 64GB RAM (m3.xxlarge) for an entire year. The team can however run up to 128 vCPU and 256GB RAM simultaneously in bursts. Additionally, it appears that the Monash cluster supports pre-emptible (spot) instances which use 1/4 Service Units but can only last maximum 24 hours (see https://support.ehelp.edu.au/support/solutions/articles/6000255691-nectar-services-summary-list#:~:text=Preemptible%20Instances,Melbourne%2C%20QRIScloud%2C%20Tasmania, and https://support.ehelp.edu.au/support/solutions/articles/6000243910-nectar-preemptible-instance-service)
-This is a good starting point for MMS to run heavy workloads.
 
-The ARDC Nectar cluster is an implementation of an OpenStack cluster and supports OpenStack sdk and packages. I think that MMS would benefit from deploying a Kubernetes cluster on Nectar (see guide here: https://tutorials.rc.nectar.org.au/kubernetes/01-overview), since it would allow the team to efficiently run containerised services and jobs using Nectar, but more importantly would handle scaling efficiently. It would also support a GitOps approach to server management, which would improve reproducibility and ensure that the cluster does not become unmaintainable after current team members leave.
+MMS has access to the ARDC Nectar compute cloud, an OpenStack-based allocation
+for Australian research and education teams, with enough headroom to run
+bursts of heavier Kubernetes workloads alongside its steady-state services.
+Nectar also supports pre-emptible (spot) instances for workloads that can
+tolerate interruption, at a reduced cost compared to on-demand capacity (see
+https://support.ehelp.edu.au/support/solutions/articles/6000243910-nectar-preemptible-instance-service).
+This is a solid starting point for running heavy workloads. Exact allocation
+sizing isn't detailed here since it's tied to MMS's specific grant and changes
+over time — see Nectar's own documentation for current tiers and limits.
+
+The ARDC Nectar cluster is an OpenStack deployment and supports the OpenStack
+SDK and tooling. Deploying a Kubernetes cluster on Nectar (see
+https://tutorials.rc.nectar.org.au/kubernetes/01-overview) lets the team run
+containerised services and jobs with efficient scaling, and supports a GitOps
+approach to server management — improving reproducibility and ensuring the
+cluster doesn't become unmaintainable after the current team moves on.
 
 ## Changes To Jenkins
-Currently the team is hosting its Jenkins server on the ARDC on a 16 vCPU, 32GB RAM server (I believe, directly installed in an Ubuntu image). While this setup works fine and would continue to function for the team, it is essentially wasting service units because the Jenkins server only processes a handful of pull requests per day and sits idle for the rest of the time. I have not looked at or calculated a single number, but I would guess that Jenkins sits idle 80% of the time, especially between 12am and 8am.
 
-I propose that MMS uses the Jenkins Kubernetes plugin to deploy Jenkins agents on Kubernetes. In this setup, Jenkins would operate a lightweight server which would orchestrate jobs to run on agents, but the built-in Jenkins agent would not run any jobs itself. The Jenkins kubernetes plugin would schedule agents to run in kubernetes, which can have resource requests as desired for that particular Jenkins pipeline. Using this setup, the Jenkins server could likely run with 2 vCPU and 4GB RAM (Gemini gave me those numbers, but honestly I believe it would be around this). MMS could then utilise an autoscaling cluster which would scale up when Jenkins tries to schedule jobs (using the Kubernetes API) and scale back down when nodes are no longer needed. This will introduce an overhead for scaling up the cluster every time that a Jenkins job is submitted, which will likely mean about a 1-2 minute delay in jobs starting. I think that this overhead is small enough compared to the regular Jenkins pipeline length to be considered negligible. Additionally, this overhead will enable massively improved parallelism, meaning that many pipeline executions could occur simultaneously with no performance degradation.
+The team currently hosts its Jenkins server on ARDC on a dedicated 16 vCPU,
+32GB RAM VM. This setup works, but wastes Service Units: Jenkins only
+processes a handful of pull requests per day and sits idle the rest of the
+time, especially overnight.
 
-The build stage of the MMS pipeline should produce a deployable docker image. If the build stage of the MMS pipeline produces a deployable docker image, then this can be stored as an output and be used to feed into BagAnTo testing. Alternatively, BagAnTo could be integrated into Jenkins, but I think that letting BagAnTo runs handle their own orchestration without the Jenkins node supervising makes more sense. I think Jenkins should build the docker image, publish it to the container registry and then either trigger BagAnTo to start running in Parallel or else trigger it at the end of the Jenkins pipeline.
+The proposed change is to use the Jenkins Kubernetes plugin to run Jenkins
+agents on Kubernetes instead of on a static VM. In this model, Jenkins runs a
+lightweight controller that schedules jobs onto on-demand agent pods — the
+controller itself doesn't execute any jobs, so it can run with a small
+resource footprint (roughly 2 vCPU / 4GB RAM). The cluster then autoscales:
+new nodes are provisioned when the Kubernetes API reports pods to schedule,
+and scaled back down once the agents are no longer needed. This introduces a
+scale-up delay (roughly 1-2 minutes) before a job starts, which is small
+relative to typical pipeline length, and in exchange enables many pipelines to
+run in parallel without resource contention.
 
+The build stage of the MMS pipeline should produce a deployable Docker image
+that can be fed into BagAnTo for testing. BagAnTo should handle its own
+orchestration independently rather than being supervised by the Jenkins
+controller node — Jenkins' role is to build the image, publish it to the
+container registry, and then trigger a BagAnTo run (either in parallel with
+the rest of the pipeline, or at the end of it).
 
-## Opinions About Jenkins
-Consider me a naive outsider. I am about to write down my opinion that you didn't ask for and probably don't care about, but I was looking through Jenkins and have some opinions on the way that it is currently running.
+## Observations From The Existing Jenkins Setup
 
-1.
-    I saw a pull request someone had made where they had made 3 commits in the span of 6 minutes and all 3 commits triggered a Jenkins pipeline. The Jenkins agent then ran all 3 commits in parallel on the 3 different executors on the built-in agent. The build time for the 3 parallel executions is almost 3 times the build time of a single execution of (almost) equivalent code.
+A few inefficiencies observed while reviewing the current Jenkins pipeline,
+worth addressing independently of the Kubernetes migration above:
 
-    One non-parallel Jenkins run:
-    ![One non-parallel Jenkins run](./pics/single-jenkins-run.png)
+1. **Superseded commits still run to completion.** A pull request with
+   several commits pushed within a few minutes of each other currently
+   triggers a separate full pipeline run for each commit, run in parallel on
+   separate executors — multiplying total build time with no benefit, since
+   the result of a superseded commit is rarely needed. Automatically
+   cancelling a pipeline run when a newer commit lands on the same branch
+   would free up executor capacity for commits that matter, at the cost of
+   occasionally cancelling a run that was about to finish, or complicating
+   "which commit is safe to revert to" bookkeeping if a cancelled run is later
+   needed. In practice, commits that close together are unlikely to need their
+   individual pipeline output preserved.
 
-    Three parallel Jenkins runs:
-    ![Three parallel Jenkins runs](./pics/triple-jenkins-run.png)
+   One non-parallel Jenkins run:
+   ![One non-parallel Jenkins run](./pics/single-jenkins-run.png)
 
-    I think that after subsequent commits that previous Jenkins runs should be automatically aborted.
-    Arguments for:
-    - would reduce overall Jenkins load from repetitive testing, which would speed up recent commits due to more resource availability
-    - assume a full Jenkins pipeline takes 20 minutes. Committing code less than 20 minutes after the initial commit means you probably realised your previous code needed to be updated anyway and you're unlikely to need the output of a previous commit if this is the case
+   Three commits pushed minutes apart, triggering three parallel runs (total
+   build time is nearly 3x a single run):
+   ![Three parallel Jenkins runs](./pics/triple-jenkins-run.png)
 
-    Arguments against:
-    - if your Jenkins pipeline execution is 99% complete but gets aborted because you committed a non-code change (e.g. added comments to a file or updated documentation). Yeah, that sucks
-    - might want to revert the commit and won't know what commits are safe to revert to. I still think that if you pushed changes that close together then your code wasn't good for it in the first place
-
-2.
-    The Jenkins build doesn't seem super efficient. The "Declarative: Agent Setup" stage seems like the agent's setup should just be independent of a particular pipeline's scripts. At a quick glane, the agent setup stuff should probably be updated on a regular basis but this shouldn't happen every time a Jenkins build is launched. There should be a daily/weekly cron job which triggers updating the Jenkins agent docker image and all the other pipelines should just refer to that published docker image by tag. This would avoid some random builds having long agent setup stages when (from my understanding) it isn't relevant to the code being tested.
-
-    Overall I think that there are other things that could be cached and reused more effectively, but again, I say this as a naive outsider that has never used colcon.
+2. **Agent setup runs on every pipeline execution.** The "Declarative: Agent
+   Setup" stage currently re-runs for every pipeline invocation, even though
+   agent setup should be largely independent of the specific commit under
+   test. A scheduled (daily/weekly) job that rebuilds and publishes the agent
+   image, with pipelines simply referencing that image by tag, would remove
+   this overhead from the common path. There are likely other opportunities to
+   cache and reuse build artifacts across pipeline runs more effectively.

@@ -8,7 +8,7 @@ Throughout this guide I will assume that you already have a cluster setup and th
 ## ArgoCD Setup
 ArgoCD is used to self-manage ArgoCD. To achieve this you just need to bootstrap the deployment once and then it will be able to self-manage from there. You can do this by running the following command from the root of the project repository:
 ```bash
-kubectl apply -k ./project/code/kubernetes/argocd-management
+kubectl apply -k ./kubernetes/argocd-management
 ```
 
 ## Sealed Secrets
@@ -31,9 +31,11 @@ You will need to update any external dependencies for this cluster setup. At the
     - If continuing to use the Cloudflare Tunnel, you will need to update the tunnel's settings accordingly. See the [cloudflare tunnel setup information](./architecture/cloudflare-tunnel/configuration.md) for more guidance
 
 ## Changing The Git Repository
-Updating the git repository can most likely be done by bulk-replacing the references to `git@github.com:MerrickJC/MerrickCampbell_MinorThesis_ROSDatabase.git` with the new repository instead. These references mostly appear in the [argocd-management folder](../project/code/kubernetes/argocd-management/).
+Updating the git repository can most likely be done by bulk-replacing the references to `https://github.com/MerrickJC/k3s_infrastructure.git` with the new repository instead. These references mostly appear in the [argocd-management folder](../kubernetes/argocd-management/).
 
-ArgoCD will require a key to be able to read the new repository. The easiest way to add this is to use a sealed secret for the repository credentials. Create a file **locally** (DO NOT COMMIT IT!) called `repo-secret.yaml` and paste the following:
+If the new repository is **public**, that's the entire migration for this section: ArgoCD can pull a public repo over plain HTTPS with no credentials, so `repoURL` just needs to be the plain `https://github.com/<owner>/<repo>.git` clone URL, and no sealed secret is required at all — skip the rest of this section.
+
+If the new repository is **private**, ArgoCD will require a key to be able to read it. The easiest way to add this is to use a sealed secret for the repository credentials. Create a file **locally** (DO NOT COMMIT IT!) called `repo-secret.yaml` and paste the following:
 ```yaml
 # DO NOT COMMIT THIS FILE TO GIT
 apiVersion: v1
@@ -59,4 +61,4 @@ Then run:
 ```bash
 kubeseal -f repo-secret.yaml -w repo-sealed-secret.yaml
 ```
-Copy that file into the [argocd-management folder](../project/code/kubernetes/argocd-management/) and make sure that it is added to the [`kustomization.yaml`](../project/code/kubernetes/argocd-management/kustomization.yaml) as a resource so that it gets applied to the cluster. If there is already a file there for a git repository that you are no longer using, you can just overwrite that file.
+Copy that file into the [argocd-management folder](../kubernetes/argocd-management/) and make sure that it is added to the [`kustomization.yaml`](../kubernetes/argocd-management/kustomization.yaml) as a resource so that it gets applied to the cluster. If there is already a file there for a git repository that you are no longer using, you can just overwrite that file.

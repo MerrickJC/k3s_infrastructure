@@ -8,19 +8,19 @@ This wires ArgoCD's login into the same Dex instance already used in the cluster
 | Any `monashmotorsport` org member | ArgoCD's built-in `role:readonly` |
 | Members of the `monashmotorsport` GitHub team "Autonomous Systems" | ArgoCD's built-in `role:admin` |
 
-See [project/code/kubernetes/argocd-management/argocd-rbac-cm-patch.yaml](../../project/code/kubernetes/argocd-management/argocd-rbac-cm-patch.yaml) for the policy.
+See [kubernetes/argocd-management/argocd-rbac-cm-patch.yaml](../../kubernetes/argocd-management/argocd-rbac-cm-patch.yaml) for the policy.
 
 ## `oidc.config`, not `dex.config`
-ArgoCD ships its own bundled `argocd-dex-server`, which is normally used to front an upstream identity provider itself (`dex.config`). Since this project already runs a full, standalone Dex instance as the shared IdP for everything else, ArgoCD is instead pointed straight at it as a native OIDC issuer. This can be seen under `oidc.config` in `argocd-cm` (see [argocd-cm-patch.yaml](../../project/code/kubernetes/argocd-management/argocd-cm-patch.yaml)). This avoids running two overlapping Dex instances. `argocd-dex-server` still gets deployed (it's part of the upstream install manifest ArgoCD is built from) but is simply unused.
+ArgoCD ships its own bundled `argocd-dex-server`, which is normally used to front an upstream identity provider itself (`dex.config`). Since this project already runs a full, standalone Dex instance as the shared IdP for everything else, ArgoCD is instead pointed straight at it as a native OIDC issuer. This can be seen under `oidc.config` in `argocd-cm` (see [argocd-cm-patch.yaml](../../kubernetes/argocd-management/argocd-cm-patch.yaml)). This avoids running two overlapping Dex instances. `argocd-dex-server` still gets deployed (it's part of the upstream install manifest ArgoCD is built from) but is simply unused.
 
-Because ArgoCD is bootstrapped by referencing the upstream `install.yaml` directly (see `project/code/kubernetes/argocd-management/kustomization.yaml`), the `argocd-cm` / `argocd-rbac-cm` ConfigMaps can't be edited in place, so they're overridden with Kustomize `patches` in that same `kustomization.yaml`, merging in just the OIDC/RBAC keys.
+Because ArgoCD is bootstrapped by referencing the upstream `install.yaml` directly (see `kubernetes/argocd-management/kustomization.yaml`), the `argocd-cm` / `argocd-rbac-cm` ConfigMaps can't be edited in place, so they're overridden with Kustomize `patches` in that same `kustomization.yaml`, merging in just the OIDC/RBAC keys.
 
 ## Setting up the client secret
 ArgoCD requires sealing secrets like any other Dex client
 ```bash
-kubectl create secret generic argocd-dex-client-secret --from-literal=ARGOCD_DEX_CLIENT_SECRET="<random-value>" -n dex --dry-run=client -o yaml | kubeseal --format yaml > project/code/kubernetes/apps/dex/secrets/argocd-dex.yaml
+kubectl create secret generic argocd-dex-client-secret --from-literal=ARGOCD_DEX_CLIENT_SECRET="<random-value>" -n dex --dry-run=client -o yaml | kubeseal --format yaml > kubernetes/apps/dex/secrets/argocd-dex.yaml
 
-kubectl create secret generic argocd-dex-client-secret --from-literal=ARGOCD_DEX_CLIENT_SECRET="<same-random-value>" -n argocd --dry-run=client -o yaml | kubeseal --format yaml > project/code/kubernetes/apps/dex/secrets/argocd-client.yaml
+kubectl create secret generic argocd-dex-client-secret --from-literal=ARGOCD_DEX_CLIENT_SECRET="<same-random-value>" -n argocd --dry-run=client -o yaml | kubeseal --format yaml > kubernetes/apps/dex/secrets/argocd-client.yaml
 ```
 
 **Configuration Specific To ArgoCD:** the Secret created in the `argocd` namespace must carry the label

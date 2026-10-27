@@ -1,18 +1,18 @@
 # OIDC Authentication For kubectl / The Kubernetes API
 
 ## Why
-By default, K3s only accepts client-certificate based auth for `kubectl`, which means the only way to grant someone cluster access is to hand them the admin kubeconfig (full `cluster-admin`, no per-person identity, no way to revoke a single person). This sets up Dex (already running in-cluster, see [dex/secrets/README.md](../../project/code/kubernetes/apps/dex/secrets/README.md)) as an OIDC provider for the Kubernetes API server itself, so every `kubectl` command requires logging in with your GitHub account, requiring membership in the `monashmotorsport` GitHub org.
+By default, K3s only accepts client-certificate based auth for `kubectl`, which means the only way to grant someone cluster access is to hand them the admin kubeconfig (full `cluster-admin`, no per-person identity, no way to revoke a single person). This sets up Dex (already running in-cluster, see [dex/secrets/README.md](../../kubernetes/apps/dex/secrets/README.md)) as an OIDC provider for the Kubernetes API server itself, so every `kubectl` command requires logging in with your GitHub account, requiring membership in the `monashmotorsport` GitHub org.
 
-**OIDC login only proves who you are (authentication). It does not grant any permissions on its own, that requires RBAC (authorization), which is configured separately.** See [project/code/kubernetes/apps/rbac-oidc/manifest.yaml](../../project/code/kubernetes/apps/rbac-oidc/manifest.yaml) for the two tiers granted here:
+**OIDC login only proves who you are (authentication). It does not grant any permissions on its own, that requires RBAC (authorization), which is configured separately.** See [kubernetes/apps/rbac-oidc/manifest.yaml](../../kubernetes/apps/rbac-oidc/manifest.yaml) for the two tiers granted here:
 
 | Who | Access |
 |---|---|
 | Any `monashmotorsport` GitHub org member (i.e. anyone who can log in via Dex at all) | Read-only, cluster-wide, **excluding Secrets** (Kubernetes' built-in `view` role) |
 | Members of the `monashmotorsport` GitHub team "Autonomous Systems" | `cluster-admin` |
 
-The read-only tier is bound to Kubernetes' built-in `system:authenticated` group rather than a Dex org-membership group claim, since Dex is already configured to refuse to log anyone in who isn't a `monashmotorsport` org member (see `orgs:` in [dex/values.yaml](../../project/code/kubernetes/apps/dex/values.yaml)), so anyone who has logged in must be a member of monashmotorsport. The admin tier checks the group claim from Dex to see if the user is in autonomous-systems. 
+The read-only tier is bound to Kubernetes' built-in `system:authenticated` group rather than a Dex org-membership group claim, since Dex is already configured to refuse to log anyone in who isn't a `monashmotorsport` org member (see `orgs:` in [dex/values.yaml](../../kubernetes/apps/dex/values.yaml)), so anyone who has logged in must be a member of monashmotorsport. The admin tier checks the group claim from Dex to see if the user is in autonomous-systems. 
 
-**Dex uses kubernetes-backed storage** (`config.storage.type: kubernetes` in [dex/values.yaml](../../project/code/kubernetes/apps/dex/values.yaml)), not the default in-memory storage. Since Dex's signing key lives in that storage, with in-memory storage, every Dex pod restart silently regenerated the signing key and invalidated every outstanding token cluster-wide, breaking logins all at once with an `oidc: verify token: failed to verify signature` error. Kubernetes-backed storage persists the signing key as a CRD, so it survives pod restarts.
+**Dex uses kubernetes-backed storage** (`config.storage.type: kubernetes` in [dex/values.yaml](../../kubernetes/apps/dex/values.yaml)), not the default in-memory storage. Since Dex's signing key lives in that storage, with in-memory storage, every Dex pod restart silently regenerated the signing key and invalidated every outstanding token cluster-wide, breaking logins all at once with an `oidc: verify token: failed to verify signature` error. Kubernetes-backed storage persists the signing key as a CRD, so it survives pod restarts.
 
 ## 1. Manual step: K3s API server flags (not stored in Git)
 K3s server bootstrap lives outside this repository (see [migration-guide.md](../migration-guide.md)), so this step has to be applied by hand on every K3s **server** node (not agents).
