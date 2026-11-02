@@ -20,7 +20,7 @@ controller:
   # transitively pulled in by another plugin here, and mapped from a specific JCasC key in the
   # config below
   additionalPlugins:
-    - oic-auth:4.718.ve731df6ca_88a_
+    - oic-auth:4.731.v4932b_506e767
     # gitHubApp credential type
     - github-branch-source:1983.vfa_27ed961853
     # jenkins.authorizationStrategy.globalMatrix
