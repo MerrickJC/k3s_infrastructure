@@ -7,4 +7,4 @@ hasManifests: true
 helm:
   repoURL: https://charts.jetstack.io
   chart: cert-manager
-  targetRevision: v1.21.1
+  targetRevision: v1.21.3
