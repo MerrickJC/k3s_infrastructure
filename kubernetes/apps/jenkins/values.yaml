@@ -36,7 +36,7 @@ controller:
     # unclassified.junitTestResultStorage
     - junit:1425.v9c7318dca_96d
     # unclassified.googlechatnotification (used by the Pull Request Status webhook credential)
-    - google-chat-notification:166.ve6b_de280f2e8
+    - google-chat-notification:196.v328822355d78
     # unclassified.pipeline-model-docker
     - docker-workflow:653.v2f2c08eff0ec
     # appearance.themeManager - found by the boot-validation CI check, not by inference
