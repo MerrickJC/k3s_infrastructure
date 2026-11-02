@@ -7,7 +7,7 @@ hasManifests: true
 helm:
   repoURL: https://seaweedfs.github.io/seaweedfs/helm
   chart: seaweedfs
-  targetRevision: 4.47.0
+  targetRevision: 4.51.0
 
 # Keeps SeaweedFS PVC (bucket data) in place, instead of pruning it
 preventDeletion: true
